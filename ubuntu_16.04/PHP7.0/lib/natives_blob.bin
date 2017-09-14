@@ -1,0 +1,6862 @@
+mirrorsöð
+(function(a,b){
+"use strict";
+var c=a.Array;
+var d=a.isNaN;
+var e=a.JSON.stringify;
+var f=a.Map.prototype.entries;
+var g=(new a.Map).entries().next;
+var h=(new a.Set).values().next;
+var i=a.Set.prototype.values;
+var j={
+UNDEFINED_TYPE:'undefined',
+NULL_TYPE:'null',
+BOOLEAN_TYPE:'boolean',
+NUMBER_TYPE:'number',
+STRING_TYPE:'string',
+SYMBOL_TYPE:'symbol',
+OBJECT_TYPE:'object',
+FUNCTION_TYPE:'function',
+REGEXP_TYPE:'regexp',
+ERROR_TYPE:'error',
+PROPERTY_TYPE:'property',
+INTERNAL_PROPERTY_TYPE:'internalProperty',
+FRAME_TYPE:'frame',
+SCRIPT_TYPE:'script',
+CONTEXT_TYPE:'context',
+SCOPE_TYPE:'scope',
+PROMISE_TYPE:'promise',
+MAP_TYPE:'map',
+SET_TYPE:'set',
+ITERATOR_TYPE:'iterator',
+GENERATOR_TYPE:'generator',
+}
+function MakeMirror(k){
+var l;
+if((k===(void 0))){
+l=new UndefinedMirror();
+}else if((k===null)){
+l=new NullMirror();
+}else if((typeof(k)==='boolean')){
+l=new BooleanMirror(k);
+}else if((typeof(k)==='number')){
+l=new NumberMirror(k);
+}else if((typeof(k)==='string')){
+l=new StringMirror(k);
+}else if((typeof(k)==='symbol')){
+l=new SymbolMirror(k);
+}else if((%_IsArray(k))){
+l=new ArrayMirror(k);
+}else if((%IsDate(k))){
+l=new DateMirror(k);
+}else if((%IsFunction(k))){
+l=new FunctionMirror(k);
+}else if(%IsRegExp(k)){
+l=new RegExpMirror(k);
+}else if((%_ClassOf(k)==='Error')){
+l=new ErrorMirror(k);
+}else if((%_ClassOf(k)==='Script')){
+l=new ScriptMirror(k);
+}else if((%_IsJSMap(k))||(%_IsJSWeakMap(k))){
+l=new MapMirror(k);
+}else if((%_IsJSSet(k))||(%_IsJSWeakSet(k))){
+l=new SetMirror(k);
+}else if((%_ClassOf(k)==='Map Iterator')||(%_ClassOf(k)==='Set Iterator')){
+l=new IteratorMirror(k);
+}else if(%is_promise(k)){
+l=new PromiseMirror(k);
+}else if((%_ClassOf(k)==='Generator')){
+l=new GeneratorMirror(k);
+}else{
+l=new ObjectMirror(k,j.OBJECT_TYPE);
+}
+return l;
+}
+function GetUndefinedMirror(){
+return MakeMirror((void 0));
+}
+function inherits(m,n){
+var o=function(){};
+o.prototype=n.prototype;
+m.super_=n.prototype;
+m.prototype=new o();
+m.prototype.constructor=m;
+}
+var p=80;
+var q={};
+q.Data=0;
+q.Accessor=1;
+var r={};
+r.None=0;
+r.ReadOnly=1;
+r.DontEnum=2;
+r.DontDelete=4;
+var s={Global:0,
+Local:1,
+With:2,
+Closure:3,
+Catch:4,
+Block:5,
+Script:6,
+Eval:7,
+Module:8,
+};
+function Mirror(t){
+this.type_=t;
+}
+Mirror.prototype.type=function(){
+return this.type_;
+};
+Mirror.prototype.isValue=function(){
+return this instanceof ValueMirror;
+};
+Mirror.prototype.isUndefined=function(){
+return this instanceof UndefinedMirror;
+};
+Mirror.prototype.isNull=function(){
+return this instanceof NullMirror;
+};
+Mirror.prototype.isBoolean=function(){
+return this instanceof BooleanMirror;
+};
+Mirror.prototype.isNumber=function(){
+return this instanceof NumberMirror;
+};
+Mirror.prototype.isString=function(){
+return this instanceof StringMirror;
+};
+Mirror.prototype.isSymbol=function(){
+return this instanceof SymbolMirror;
+};
+Mirror.prototype.isObject=function(){
+return this instanceof ObjectMirror;
+};
+Mirror.prototype.isFunction=function(){
+return this instanceof FunctionMirror;
+};
+Mirror.prototype.isUnresolvedFunction=function(){
+return this instanceof UnresolvedFunctionMirror;
+};
+Mirror.prototype.isArray=function(){
+return this instanceof ArrayMirror;
+};
+Mirror.prototype.isDate=function(){
+return this instanceof DateMirror;
+};
+Mirror.prototype.isRegExp=function(){
+return this instanceof RegExpMirror;
+};
+Mirror.prototype.isError=function(){
+return this instanceof ErrorMirror;
+};
+Mirror.prototype.isPromise=function(){
+return this instanceof PromiseMirror;
+};
+Mirror.prototype.isGenerator=function(){
+return this instanceof GeneratorMirror;
+};
+Mirror.prototype.isProperty=function(){
+return this instanceof PropertyMirror;
+};
+Mirror.prototype.isInternalProperty=function(){
+return this instanceof InternalPropertyMirror;
+};
+Mirror.prototype.isFrame=function(){
+return this instanceof FrameMirror;
+};
+Mirror.prototype.isScript=function(){
+return this instanceof ScriptMirror;
+};
+Mirror.prototype.isContext=function(){
+return this instanceof ContextMirror;
+};
+Mirror.prototype.isScope=function(){
+return this instanceof ScopeMirror;
+};
+Mirror.prototype.isMap=function(){
+return this instanceof MapMirror;
+};
+Mirror.prototype.isSet=function(){
+return this instanceof SetMirror;
+};
+Mirror.prototype.isIterator=function(){
+return this instanceof IteratorMirror;
+};
+Mirror.prototype.toText=function(){
+return"#<"+this.constructor.name+">";
+};
+function ValueMirror(t,k){
+%_Call(Mirror,this,t);
+this.value_=k;
+}
+inherits(ValueMirror,Mirror);
+ValueMirror.prototype.isPrimitive=function(){
+var t=this.type();
+return t==='undefined'||
+t==='null'||
+t==='boolean'||
+t==='number'||
+t==='string'||
+t==='symbol';
+};
+ValueMirror.prototype.value=function(){
+return this.value_;
+};
+function UndefinedMirror(){
+%_Call(ValueMirror,this,j.UNDEFINED_TYPE,(void 0));
+}
+inherits(UndefinedMirror,ValueMirror);
+UndefinedMirror.prototype.toText=function(){
+return'undefined';
+};
+function NullMirror(){
+%_Call(ValueMirror,this,j.NULL_TYPE,null);
+}
+inherits(NullMirror,ValueMirror);
+NullMirror.prototype.toText=function(){
+return'null';
+};
+function BooleanMirror(k){
+%_Call(ValueMirror,this,j.BOOLEAN_TYPE,k);
+}
+inherits(BooleanMirror,ValueMirror);
+BooleanMirror.prototype.toText=function(){
+return this.value_?'true':'false';
+};
+function NumberMirror(k){
+%_Call(ValueMirror,this,j.NUMBER_TYPE,k);
+}
+inherits(NumberMirror,ValueMirror);
+NumberMirror.prototype.toText=function(){
+return %NumberToString(this.value_);
+};
+function StringMirror(k){
+%_Call(ValueMirror,this,j.STRING_TYPE,k);
+}
+inherits(StringMirror,ValueMirror);
+StringMirror.prototype.length=function(){
+return this.value_.length;
+};
+StringMirror.prototype.getTruncatedValue=function(u){
+if(u!=-1&&this.length()>u){
+return this.value_.substring(0,u)+
+'... (length: '+this.length()+')';
+}
+return this.value_;
+};
+StringMirror.prototype.toText=function(){
+return this.getTruncatedValue(p);
+};
+function SymbolMirror(k){
+%_Call(ValueMirror,this,j.SYMBOL_TYPE,k);
+}
+inherits(SymbolMirror,ValueMirror);
+SymbolMirror.prototype.description=function(){
+return %SymbolDescription(%ValueOf(this.value_));
+}
+SymbolMirror.prototype.toText=function(){
+return %SymbolDescriptiveString(%ValueOf(this.value_));
+}
+function ObjectMirror(k,t){
+t=t||j.OBJECT_TYPE;
+%_Call(ValueMirror,this,t,k);
+}
+inherits(ObjectMirror,ValueMirror);
+ObjectMirror.prototype.className=function(){
+return %_ClassOf(this.value_);
+};
+ObjectMirror.prototype.constructorFunction=function(){
+return MakeMirror(%DebugGetProperty(this.value_,'constructor'));
+};
+ObjectMirror.prototype.prototypeObject=function(){
+return MakeMirror(%DebugGetProperty(this.value_,'prototype'));
+};
+ObjectMirror.prototype.protoObject=function(){
+return MakeMirror(%DebugGetPrototype(this.value_));
+};
+ObjectMirror.prototype.hasNamedInterceptor=function(){
+var v=%GetInterceptorInfo(this.value_);
+return(v&2)!=0;
+};
+ObjectMirror.prototype.hasIndexedInterceptor=function(){
+var v=%GetInterceptorInfo(this.value_);
+return(v&1)!=0;
+};
+ObjectMirror.prototype.propertyNames=function(){
+return %GetOwnPropertyKeys(this.value_,0);
+};
+ObjectMirror.prototype.properties=function(){
+var w=this.propertyNames();
+var x=new c(w.length);
+for(var y=0;y<w.length;y++){
+x[y]=this.property(w[y]);
+}
+return x;
+};
+ObjectMirror.prototype.internalProperties=function(){
+return ObjectMirror.GetInternalProperties(this.value_);
+}
+ObjectMirror.prototype.property=function(z){
+var A=%DebugGetPropertyDetails(this.value_,z);
+if(A){
+return new PropertyMirror(this,z,A);
+}
+return GetUndefinedMirror();
+};
+ObjectMirror.prototype.lookupProperty=function(k){
+var x=this.properties();
+for(var y=0;y<x.length;y++){
+var B=x[y];
+if(B.propertyType()==q.Data){
+if(B.value_===k.value_){
+return B;
+}
+}
+}
+return GetUndefinedMirror();
+};
+ObjectMirror.prototype.referencedBy=function(C){
+var D=%DebugReferencedBy(this.value_,
+Mirror.prototype,C||0);
+for(var y=0;y<D.length;y++){
+D[y]=MakeMirror(D[y]);
+}
+return D;
+};
+ObjectMirror.prototype.toText=function(){
+var z;
+var m=this.constructorFunction();
+if(!m.isFunction()){
+z=this.className();
+}else{
+z=m.name();
+if(!z){
+z=this.className();
+}
+}
+return'#<'+z+'>';
+};
+ObjectMirror.GetInternalProperties=function(k){
+var x=%DebugGetInternalProperties(k);
+var D=[];
+for(var y=0;y<x.length;y+=2){
+D.push(new InternalPropertyMirror(x[y],x[y+1]));
+}
+return D;
+}
+function FunctionMirror(k){
+%_Call(ObjectMirror,this,k,j.FUNCTION_TYPE);
+this.resolved_=true;
+}
+inherits(FunctionMirror,ObjectMirror);
+FunctionMirror.prototype.resolved=function(){
+return this.resolved_;
+};
+FunctionMirror.prototype.name=function(){
+return %FunctionGetName(this.value_);
+};
+FunctionMirror.prototype.debugName=function(){
+return %FunctionGetDebugName(this.value_);
+}
+FunctionMirror.prototype.inferredName=function(){
+return %FunctionGetInferredName(this.value_);
+};
+FunctionMirror.prototype.source=function(){
+if(this.resolved()){
+return %FunctionToString(this.value_);
+}
+};
+FunctionMirror.prototype.script=function(){
+if(this.resolved()){
+if(this.script_){
+return this.script_;
+}
+var E=%FunctionGetScript(this.value_);
+if(E){
+return this.script_=MakeMirror(E);
+}
+}
+};
+FunctionMirror.prototype.sourcePosition_=function(){
+if(this.resolved()){
+return %FunctionGetScriptSourcePosition(this.value_);
+}
+};
+FunctionMirror.prototype.sourceLocation=function(){
+if(this.resolved()){
+var E=this.script();
+if(E){
+return E.locationFromPosition(this.sourcePosition_(),true);
+}
+}
+};
+FunctionMirror.prototype.constructedBy=function(F){
+if(this.resolved()){
+var D=%DebugConstructedBy(this.value_,F||0);
+for(var y=0;y<D.length;y++){
+D[y]=MakeMirror(D[y]);
+}
+return D;
+}else{
+return[];
+}
+};
+FunctionMirror.prototype.scopeCount=function(){
+if(this.resolved()){
+if((this.scopeCount_===(void 0))){
+this.scopeCount_=%GetFunctionScopeCount(this.value());
+}
+return this.scopeCount_;
+}else{
+return 0;
+}
+};
+FunctionMirror.prototype.scope=function(G){
+if(this.resolved()){
+return new ScopeMirror((void 0),this,(void 0),G);
+}
+};
+FunctionMirror.prototype.toText=function(){
+return this.source();
+};
+FunctionMirror.prototype.context=function(){
+if(this.resolved()){
+if(!this._context)
+this._context=new ContextMirror(%FunctionGetContextData(this.value_));
+return this._context;
+}
+};
+function UnresolvedFunctionMirror(k){
+%_Call(ValueMirror,this,j.FUNCTION_TYPE,k);
+this.propertyCount_=0;
+this.elementCount_=0;
+this.resolved_=false;
+}
+inherits(UnresolvedFunctionMirror,FunctionMirror);
+UnresolvedFunctionMirror.prototype.className=function(){
+return'Function';
+};
+UnresolvedFunctionMirror.prototype.constructorFunction=function(){
+return GetUndefinedMirror();
+};
+UnresolvedFunctionMirror.prototype.prototypeObject=function(){
+return GetUndefinedMirror();
+};
+UnresolvedFunctionMirror.prototype.protoObject=function(){
+return GetUndefinedMirror();
+};
+UnresolvedFunctionMirror.prototype.name=function(){
+return this.value_;
+};
+UnresolvedFunctionMirror.prototype.debugName=function(){
+return this.value_;
+};
+UnresolvedFunctionMirror.prototype.inferredName=function(){
+return(void 0);
+};
+UnresolvedFunctionMirror.prototype.propertyNames=function(H,I){
+return[];
+};
+function ArrayMirror(k){
+%_Call(ObjectMirror,this,k);
+}
+inherits(ArrayMirror,ObjectMirror);
+ArrayMirror.prototype.length=function(){
+return this.value_.length;
+};
+ArrayMirror.prototype.indexedPropertiesFromRange=function(opt_from_index,
+opt_to_index){
+var J=opt_from_index||0;
+var K=opt_to_index||this.length()-1;
+if(J>K)return new c();
+var L=new c(K-J+1);
+for(var y=J;y<=K;y++){
+var A=%DebugGetPropertyDetails(this.value_,(%_ToString(y)));
+var k;
+if(A){
+k=new PropertyMirror(this,y,A);
+}else{
+k=GetUndefinedMirror();
+}
+L[y-J]=k;
+}
+return L;
+};
+function DateMirror(k){
+%_Call(ObjectMirror,this,k);
+}
+inherits(DateMirror,ObjectMirror);
+DateMirror.prototype.toText=function(){
+var M=e(this.value_);
+return M.substring(1,M.length-1);
+};
+function RegExpMirror(k){
+%_Call(ObjectMirror,this,k,j.REGEXP_TYPE);
+}
+inherits(RegExpMirror,ObjectMirror);
+RegExpMirror.prototype.source=function(){
+return this.value_.source;
+};
+RegExpMirror.prototype.global=function(){
+return this.value_.global;
+};
+RegExpMirror.prototype.ignoreCase=function(){
+return this.value_.ignoreCase;
+};
+RegExpMirror.prototype.multiline=function(){
+return this.value_.multiline;
+};
+RegExpMirror.prototype.sticky=function(){
+return this.value_.sticky;
+};
+RegExpMirror.prototype.unicode=function(){
+return this.value_.unicode;
+};
+RegExpMirror.prototype.toText=function(){
+return"/"+this.source()+"/";
+};
+function ErrorMirror(k){
+%_Call(ObjectMirror,this,k,j.ERROR_TYPE);
+}
+inherits(ErrorMirror,ObjectMirror);
+ErrorMirror.prototype.message=function(){
+return this.value_.message;
+};
+ErrorMirror.prototype.toText=function(){
+var N;
+try{
+N=%ErrorToString(this.value_);
+}catch(e){
+N='#<Error>';
+}
+return N;
+};
+function PromiseMirror(k){
+%_Call(ObjectMirror,this,k,j.PROMISE_TYPE);
+}
+inherits(PromiseMirror,ObjectMirror);
+function PromiseGetStatus_(k){
+var O=%PromiseStatus(k);
+if(O==0)return"pending";
+if(O==1)return"resolved";
+return"rejected";
+}
+function PromiseGetValue_(k){
+return %PromiseResult(k);
+}
+PromiseMirror.prototype.status=function(){
+return PromiseGetStatus_(this.value_);
+};
+PromiseMirror.prototype.promiseValue=function(){
+return MakeMirror(PromiseGetValue_(this.value_));
+};
+function MapMirror(k){
+%_Call(ObjectMirror,this,k,j.MAP_TYPE);
+}
+inherits(MapMirror,ObjectMirror);
+MapMirror.prototype.entries=function(P){
+var D=[];
+if((%_IsJSWeakMap(this.value_))){
+var Q=%GetWeakMapEntries(this.value_,P||0);
+for(var y=0;y<Q.length;y+=2){
+D.push({
+key:Q[y],
+value:Q[y+1]
+});
+}
+return D;
+}
+var R=%_Call(f,this.value_);
+var S;
+while((!P||D.length<P)&&
+!(S=R.next()).done){
+D.push({
+key:S.value[0],
+value:S.value[1]
+});
+}
+return D;
+};
+function SetMirror(k){
+%_Call(ObjectMirror,this,k,j.SET_TYPE);
+}
+inherits(SetMirror,ObjectMirror);
+function IteratorGetValues_(R,T,P){
+var D=[];
+var S;
+while((!P||D.length<P)&&
+!(S=%_Call(T,R)).done){
+D.push(S.value);
+}
+return D;
+}
+SetMirror.prototype.values=function(P){
+if((%_IsJSWeakSet(this.value_))){
+return %GetWeakSetValues(this.value_,P||0);
+}
+var R=%_Call(i,this.value_);
+return IteratorGetValues_(R,h,P);
+};
+function IteratorMirror(k){
+%_Call(ObjectMirror,this,k,j.ITERATOR_TYPE);
+}
+inherits(IteratorMirror,ObjectMirror);
+IteratorMirror.prototype.preview=function(P){
+if((%_ClassOf(this.value_)==='Map Iterator')){
+return IteratorGetValues_(%MapIteratorClone(this.value_),
+g,
+P);
+}else if((%_ClassOf(this.value_)==='Set Iterator')){
+return IteratorGetValues_(%SetIteratorClone(this.value_),
+h,
+P);
+}
+};
+function GeneratorMirror(k){
+%_Call(ObjectMirror,this,k,j.GENERATOR_TYPE);
+}
+inherits(GeneratorMirror,ObjectMirror);
+function GeneratorGetStatus_(k){
+var U=%GeneratorGetContinuation(k);
+if(U<-1)return"running";
+if(U==-1)return"closed";
+return"suspended";
+}
+GeneratorMirror.prototype.status=function(){
+return GeneratorGetStatus_(this.value_);
+};
+GeneratorMirror.prototype.sourcePosition_=function(){
+return %GeneratorGetSourcePosition(this.value_);
+};
+GeneratorMirror.prototype.sourceLocation=function(){
+var V=this.sourcePosition_();
+if(!(V===(void 0))){
+var E=this.func().script();
+if(E){
+return E.locationFromPosition(V,true);
+}
+}
+};
+GeneratorMirror.prototype.func=function(){
+if(!this.func_){
+this.func_=MakeMirror(%GeneratorGetFunction(this.value_));
+}
+return this.func_;
+};
+GeneratorMirror.prototype.receiver=function(){
+if(!this.receiver_){
+this.receiver_=MakeMirror(%GeneratorGetReceiver(this.value_));
+}
+return this.receiver_;
+};
+GeneratorMirror.prototype.scopeCount=function(){
+return %GetGeneratorScopeCount(this.value());
+};
+GeneratorMirror.prototype.scope=function(G){
+return new ScopeMirror((void 0),(void 0),this,G);
+};
+GeneratorMirror.prototype.allScopes=function(){
+var W=[];
+for(let y=0;y<this.scopeCount();y++){
+W.push(this.scope(y));
+}
+return W;
+};
+function PropertyMirror(l,z,A){
+%_Call(Mirror,this,j.PROPERTY_TYPE);
+this.mirror_=l;
+this.name_=z;
+this.value_=A[0];
+this.details_=A[1];
+this.is_interceptor_=A[2];
+if(A.length>3){
+this.exception_=A[3];
+this.getter_=A[4];
+this.setter_=A[5];
+}
+}
+inherits(PropertyMirror,Mirror);
+PropertyMirror.prototype.isReadOnly=function(){
+return(this.attributes()&r.ReadOnly)!=0;
+};
+PropertyMirror.prototype.isEnum=function(){
+return(this.attributes()&r.DontEnum)==0;
+};
+PropertyMirror.prototype.canDelete=function(){
+return(this.attributes()&r.DontDelete)==0;
+};
+PropertyMirror.prototype.name=function(){
+return this.name_;
+};
+PropertyMirror.prototype.toText=function(){
+if((typeof(this.name_)==='symbol'))return %SymbolDescriptiveString(this.name_);
+return this.name_;
+};
+PropertyMirror.prototype.isIndexed=function(){
+for(var y=0;y<this.name_.length;y++){
+if(this.name_[y]<'0'||'9'<this.name_[y]){
+return false;
+}
+}
+return true;
+};
+PropertyMirror.prototype.value=function(){
+return MakeMirror(this.value_,false);
+};
+PropertyMirror.prototype.isException=function(){
+return this.exception_?true:false;
+};
+PropertyMirror.prototype.attributes=function(){
+return %DebugPropertyAttributesFromDetails(this.details_);
+};
+PropertyMirror.prototype.propertyType=function(){
+return %DebugPropertyKindFromDetails(this.details_);
+};
+PropertyMirror.prototype.hasGetter=function(){
+return this.getter_?true:false;
+};
+PropertyMirror.prototype.hasSetter=function(){
+return this.setter_?true:false;
+};
+PropertyMirror.prototype.getter=function(){
+if(this.hasGetter()){
+return MakeMirror(this.getter_);
+}else{
+return GetUndefinedMirror();
+}
+};
+PropertyMirror.prototype.setter=function(){
+if(this.hasSetter()){
+return MakeMirror(this.setter_);
+}else{
+return GetUndefinedMirror();
+}
+};
+PropertyMirror.prototype.isNative=function(){
+return this.is_interceptor_||
+((this.propertyType()==q.Accessor)&&
+!this.hasGetter()&&!this.hasSetter());
+};
+function InternalPropertyMirror(z,k){
+%_Call(Mirror,this,j.INTERNAL_PROPERTY_TYPE);
+this.name_=z;
+this.value_=k;
+}
+inherits(InternalPropertyMirror,Mirror);
+InternalPropertyMirror.prototype.name=function(){
+return this.name_;
+};
+InternalPropertyMirror.prototype.value=function(){
+return MakeMirror(this.value_,false);
+};
+var X=0;
+var Y=1;
+var Z=2;
+var aa=3;
+var ab=4;
+var ac=5;
+var ad=6;
+var ae=7;
+var af=8;
+var ag=9;
+var ah=10;
+var ai=0;
+var aj=1;
+var ak=2;
+var al=1<<0;
+var am=1<<1;
+var an=7<<2;
+function FrameDetails(ao,G){
+this.break_id_=ao;
+this.details_=%GetFrameDetails(ao,G);
+}
+FrameDetails.prototype.frameId=function(){
+%CheckExecutionState(this.break_id_);
+return this.details_[X];
+};
+FrameDetails.prototype.receiver=function(){
+%CheckExecutionState(this.break_id_);
+return this.details_[Y];
+};
+FrameDetails.prototype.func=function(){
+%CheckExecutionState(this.break_id_);
+return this.details_[Z];
+};
+FrameDetails.prototype.script=function(){
+%CheckExecutionState(this.break_id_);
+return this.details_[aa];
+};
+FrameDetails.prototype.isConstructCall=function(){
+%CheckExecutionState(this.break_id_);
+return this.details_[ae];
+};
+FrameDetails.prototype.isAtReturn=function(){
+%CheckExecutionState(this.break_id_);
+return this.details_[af];
+};
+FrameDetails.prototype.isDebuggerFrame=function(){
+%CheckExecutionState(this.break_id_);
+var ap=al;
+return(this.details_[ag]&ap)==ap;
+};
+FrameDetails.prototype.isOptimizedFrame=function(){
+%CheckExecutionState(this.break_id_);
+var ap=am;
+return(this.details_[ag]&ap)==ap;
+};
+FrameDetails.prototype.isInlinedFrame=function(){
+return this.inlinedFrameIndex()>0;
+};
+FrameDetails.prototype.inlinedFrameIndex=function(){
+%CheckExecutionState(this.break_id_);
+var ap=an;
+return(this.details_[ag]&ap)>>2;
+};
+FrameDetails.prototype.argumentCount=function(){
+%CheckExecutionState(this.break_id_);
+return this.details_[ab];
+};
+FrameDetails.prototype.argumentName=function(G){
+%CheckExecutionState(this.break_id_);
+if(G>=0&&G<this.argumentCount()){
+return this.details_[ah+
+G*ak+
+ai];
+}
+};
+FrameDetails.prototype.argumentValue=function(G){
+%CheckExecutionState(this.break_id_);
+if(G>=0&&G<this.argumentCount()){
+return this.details_[ah+
+G*ak+
+aj];
+}
+};
+FrameDetails.prototype.localCount=function(){
+%CheckExecutionState(this.break_id_);
+return this.details_[ac];
+};
+FrameDetails.prototype.sourcePosition=function(){
+%CheckExecutionState(this.break_id_);
+return this.details_[ad];
+};
+FrameDetails.prototype.localName=function(G){
+%CheckExecutionState(this.break_id_);
+if(G>=0&&G<this.localCount()){
+var aq=ah+
+this.argumentCount()*ak;
+return this.details_[aq+
+G*ak+
+ai];
+}
+};
+FrameDetails.prototype.localValue=function(G){
+%CheckExecutionState(this.break_id_);
+if(G>=0&&G<this.localCount()){
+var aq=ah+
+this.argumentCount()*ak;
+return this.details_[aq+
+G*ak+
+aj];
+}
+};
+FrameDetails.prototype.returnValue=function(){
+%CheckExecutionState(this.break_id_);
+var ar=
+ah+
+(this.argumentCount()+this.localCount())*ak;
+if(this.details_[af]){
+return this.details_[ar];
+}
+};
+FrameDetails.prototype.scopeCount=function(){
+if((this.scopeCount_===(void 0))){
+this.scopeCount_=%GetScopeCount(this.break_id_,this.frameId());
+}
+return this.scopeCount_;
+};
+function FrameMirror(ao,G){
+%_Call(Mirror,this,j.FRAME_TYPE);
+this.break_id_=ao;
+this.index_=G;
+this.details_=new FrameDetails(ao,G);
+}
+inherits(FrameMirror,Mirror);
+FrameMirror.prototype.details=function(){
+return this.details_;
+};
+FrameMirror.prototype.index=function(){
+return this.index_;
+};
+FrameMirror.prototype.func=function(){
+if(this.func_){
+return this.func_;
+}
+var ap=this.details_.func();
+if((%IsFunction(ap))){
+return this.func_=MakeMirror(ap);
+}else{
+return new UnresolvedFunctionMirror(ap);
+}
+};
+FrameMirror.prototype.script=function(){
+if(!this.script_){
+this.script_=MakeMirror(this.details_.script());
+}
+return this.script_;
+}
+FrameMirror.prototype.receiver=function(){
+return MakeMirror(this.details_.receiver());
+};
+FrameMirror.prototype.isConstructCall=function(){
+return this.details_.isConstructCall();
+};
+FrameMirror.prototype.isAtReturn=function(){
+return this.details_.isAtReturn();
+};
+FrameMirror.prototype.isDebuggerFrame=function(){
+return this.details_.isDebuggerFrame();
+};
+FrameMirror.prototype.isOptimizedFrame=function(){
+return this.details_.isOptimizedFrame();
+};
+FrameMirror.prototype.isInlinedFrame=function(){
+return this.details_.isInlinedFrame();
+};
+FrameMirror.prototype.inlinedFrameIndex=function(){
+return this.details_.inlinedFrameIndex();
+};
+FrameMirror.prototype.argumentCount=function(){
+return this.details_.argumentCount();
+};
+FrameMirror.prototype.argumentName=function(G){
+return this.details_.argumentName(G);
+};
+FrameMirror.prototype.argumentValue=function(G){
+return MakeMirror(this.details_.argumentValue(G));
+};
+FrameMirror.prototype.localCount=function(){
+return this.details_.localCount();
+};
+FrameMirror.prototype.localName=function(G){
+return this.details_.localName(G);
+};
+FrameMirror.prototype.localValue=function(G){
+return MakeMirror(this.details_.localValue(G));
+};
+FrameMirror.prototype.returnValue=function(){
+return MakeMirror(this.details_.returnValue());
+};
+FrameMirror.prototype.sourcePosition=function(){
+return this.details_.sourcePosition();
+};
+FrameMirror.prototype.sourceLocation=function(){
+var E=this.script();
+if(E){
+return E.locationFromPosition(this.sourcePosition(),true);
+}
+};
+FrameMirror.prototype.sourceLine=function(){
+var as=this.sourceLocation();
+if(as){
+return as.line;
+}
+};
+FrameMirror.prototype.sourceColumn=function(){
+var as=this.sourceLocation();
+if(as){
+return as.column;
+}
+};
+FrameMirror.prototype.sourceLineText=function(){
+var as=this.sourceLocation();
+if(as){
+return as.sourceText;
+}
+};
+FrameMirror.prototype.scopeCount=function(){
+return this.details_.scopeCount();
+};
+FrameMirror.prototype.scope=function(G){
+return new ScopeMirror(this,(void 0),(void 0),G);
+};
+FrameMirror.prototype.allScopes=function(at){
+var au=%GetAllScopesDetails(this.break_id_,
+this.details_.frameId(),
+this.details_.inlinedFrameIndex(),
+!!at);
+var D=[];
+for(var y=0;y<au.length;++y){
+D.push(new ScopeMirror(this,(void 0),(void 0),y,
+au[y]));
+}
+return D;
+};
+FrameMirror.prototype.evaluate=function(source,throw_on_side_effect=false){
+return MakeMirror(%DebugEvaluate(this.break_id_,
+this.details_.frameId(),
+this.details_.inlinedFrameIndex(),
+source,
+throw_on_side_effect));
+};
+FrameMirror.prototype.invocationText=function(){
+var D='';
+var av=this.func();
+var aw=this.receiver();
+if(this.isConstructCall()){
+D+='new ';
+D+=av.name()?av.name():'[anonymous]';
+}else if(this.isDebuggerFrame()){
+D+='[debugger]';
+}else{
+var ax=
+!aw.className||(aw.className()!='global');
+if(ax){
+D+=aw.toText();
+}
+var B=GetUndefinedMirror();
+if(aw.isObject()){
+for(var ay=aw;
+!ay.isNull()&&B.isUndefined();
+ay=ay.protoObject()){
+B=ay.lookupProperty(av);
+}
+}
+if(!B.isUndefined()){
+if(!B.isIndexed()){
+if(ax){
+D+='.';
+}
+D+=B.toText();
+}else{
+D+='[';
+D+=B.toText();
+D+=']';
+}
+if(av.name()&&av.name()!=B.name()){
+D+='(aka '+av.name()+')';
+}
+}else{
+if(ax){
+D+='.';
+}
+D+=av.name()?av.name():'[anonymous]';
+}
+}
+if(!this.isDebuggerFrame()){
+D+='(';
+for(var y=0;y<this.argumentCount();y++){
+if(y!=0)D+=', ';
+if(this.argumentName(y)){
+D+=this.argumentName(y);
+D+='=';
+}
+D+=this.argumentValue(y).toText();
+}
+D+=')';
+}
+if(this.isAtReturn()){
+D+=' returning ';
+D+=this.returnValue().toText();
+}
+return D;
+};
+FrameMirror.prototype.sourceAndPositionText=function(){
+var D='';
+var av=this.func();
+if(av.resolved()){
+var E=av.script();
+if(E){
+if(E.name()){
+D+=E.name();
+}else{
+D+='[unnamed]';
+}
+if(!this.isDebuggerFrame()){
+var as=this.sourceLocation();
+D+=' line ';
+D+=!(as===(void 0))?(as.line+1):'?';
+D+=' column ';
+D+=!(as===(void 0))?(as.column+1):'?';
+if(!(this.sourcePosition()===(void 0))){
+D+=' (position '+(this.sourcePosition()+1)+')';
+}
+}
+}else{
+D+='[no source]';
+}
+}else{
+D+='[unresolved]';
+}
+return D;
+};
+FrameMirror.prototype.localsText=function(){
+var D='';
+var az=this.localCount();
+if(az>0){
+for(var y=0;y<az;++y){
+D+='      var ';
+D+=this.localName(y);
+D+=' = ';
+D+=this.localValue(y).toText();
+if(y<az-1)D+='\n';
+}
+}
+return D;
+};
+FrameMirror.prototype.restart=function(){
+var D=%LiveEditRestartFrame(this.break_id_,this.index_);
+if((D===(void 0))){
+D="Failed to find requested frame";
+}
+return D;
+};
+FrameMirror.prototype.toText=function(aA){
+var D='';
+D+='#'+(this.index()<=9?'0':'')+this.index();
+D+=' ';
+D+=this.invocationText();
+D+=' ';
+D+=this.sourceAndPositionText();
+if(aA){
+D+='\n';
+D+=this.localsText();
+}
+return D;
+};
+var aB=0;
+var aC=1;
+var aD=2;
+var aE=3;
+var aF=4;
+var aG=5;
+function ScopeDetails(aH,aI,aJ,G,aK){
+if(aH){
+this.break_id_=aH.break_id_;
+this.details_=aK||
+%GetScopeDetails(aH.break_id_,
+aH.details_.frameId(),
+aH.details_.inlinedFrameIndex(),
+G);
+this.frame_id_=aH.details_.frameId();
+this.inlined_frame_id_=aH.details_.inlinedFrameIndex();
+}else if(aI){
+this.details_=aK||%GetFunctionScopeDetails(aI.value(),G);
+this.fun_value_=aI.value();
+this.break_id_=(void 0);
+}else{
+this.details_=
+aK||%GetGeneratorScopeDetails(aJ.value(),G);
+this.gen_value_=aJ.value();
+this.break_id_=(void 0);
+}
+this.index_=G;
+}
+ScopeDetails.prototype.type=function(){
+if(!(this.break_id_===(void 0))){
+%CheckExecutionState(this.break_id_);
+}
+return this.details_[aB];
+};
+ScopeDetails.prototype.object=function(){
+if(!(this.break_id_===(void 0))){
+%CheckExecutionState(this.break_id_);
+}
+return this.details_[aC];
+};
+ScopeDetails.prototype.name=function(){
+if(!(this.break_id_===(void 0))){
+%CheckExecutionState(this.break_id_);
+}
+return this.details_[aD];
+};
+ScopeDetails.prototype.startPosition=function(){
+if(!(this.break_id_===(void 0))){
+%CheckExecutionState(this.break_id_);
+}
+return this.details_[aE];
+}
+ScopeDetails.prototype.endPosition=function(){
+if(!(this.break_id_===(void 0))){
+%CheckExecutionState(this.break_id_);
+}
+return this.details_[aF];
+}
+ScopeDetails.prototype.func=function(){
+if(!(this.break_id_===(void 0))){
+%CheckExecutionState(this.break_id_);
+}
+return this.details_[aG];
+}
+ScopeDetails.prototype.setVariableValueImpl=function(z,aL){
+var aM;
+if(!(this.break_id_===(void 0))){
+%CheckExecutionState(this.break_id_);
+aM=%SetScopeVariableValue(this.break_id_,this.frame_id_,
+this.inlined_frame_id_,this.index_,z,aL);
+}else if(!(this.fun_value_===(void 0))){
+aM=%SetScopeVariableValue(this.fun_value_,null,null,this.index_,
+z,aL);
+}else{
+aM=%SetScopeVariableValue(this.gen_value_,null,null,this.index_,
+z,aL);
+}
+if(!aM)throw %make_error(2,"Failed to set variable value");
+};
+function ScopeMirror(aH,aI,aJ,G,aK){
+%_Call(Mirror,this,j.SCOPE_TYPE);
+if(aH){
+this.frame_index_=aH.index_;
+}else{
+this.frame_index_=(void 0);
+}
+this.scope_index_=G;
+this.details_=new ScopeDetails(aH,aI,aJ,G,aK);
+}
+inherits(ScopeMirror,Mirror);
+ScopeMirror.prototype.details=function(){
+return this.details_;
+};
+ScopeMirror.prototype.frameIndex=function(){
+return this.frame_index_;
+};
+ScopeMirror.prototype.scopeIndex=function(){
+return this.scope_index_;
+};
+ScopeMirror.prototype.scopeType=function(){
+return this.details_.type();
+};
+ScopeMirror.prototype.scopeObject=function(){
+return MakeMirror(this.details_.object());
+};
+ScopeMirror.prototype.setVariableValue=function(z,aL){
+this.details_.setVariableValueImpl(z,aL);
+};
+function ScriptMirror(E){
+%_Call(Mirror,this,j.SCRIPT_TYPE);
+this.script_=E;
+this.context_=new ContextMirror(E.context_data);
+}
+inherits(ScriptMirror,Mirror);
+ScriptMirror.prototype.value=function(){
+return this.script_;
+};
+ScriptMirror.prototype.name=function(){
+return this.script_.name||this.script_.nameOrSourceURL();
+};
+ScriptMirror.prototype.id=function(){
+return this.script_.id;
+};
+ScriptMirror.prototype.source=function(){
+return this.script_.source;
+};
+ScriptMirror.prototype.setSource=function(aN){
+if(!(typeof(aN)==='string'))throw %make_error(2,"Source is not a string");
+%DebugSetScriptSource(this.script_,aN);
+};
+ScriptMirror.prototype.lineOffset=function(){
+return this.script_.line_offset;
+};
+ScriptMirror.prototype.columnOffset=function(){
+return this.script_.column_offset;
+};
+ScriptMirror.prototype.data=function(){
+return this.script_.data;
+};
+ScriptMirror.prototype.scriptType=function(){
+return this.script_.type;
+};
+ScriptMirror.prototype.compilationType=function(){
+return this.script_.compilation_type;
+};
+ScriptMirror.prototype.lineCount=function(){
+return %ScriptLineCount(this.script_);
+};
+ScriptMirror.prototype.locationFromPosition=function(
+position,include_resource_offset){
+return this.script_.locationFromPosition(position,include_resource_offset);
+};
+ScriptMirror.prototype.context=function(){
+return this.context_;
+};
+ScriptMirror.prototype.evalFromScript=function(){
+return MakeMirror(this.script_.eval_from_script);
+};
+ScriptMirror.prototype.evalFromFunctionName=function(){
+return MakeMirror(this.script_.eval_from_function_name);
+};
+ScriptMirror.prototype.evalFromLocation=function(){
+var aO=this.evalFromScript();
+if(!aO.isUndefined()){
+var aP=this.script_.eval_from_script_position;
+return aO.locationFromPosition(aP,true);
+}
+};
+ScriptMirror.prototype.toText=function(){
+var D='';
+D+=this.name();
+D+=' (lines: ';
+if(this.lineOffset()>0){
+D+=this.lineOffset();
+D+='-';
+D+=this.lineOffset()+this.lineCount()-1;
+}else{
+D+=this.lineCount();
+}
+D+=')';
+return D;
+};
+function ContextMirror(aQ){
+%_Call(Mirror,this,j.CONTEXT_TYPE);
+this.data_=aQ;
+}
+inherits(ContextMirror,Mirror);
+ContextMirror.prototype.data=function(){
+return this.data_;
+};
+b.InstallConstants(a,[
+"MakeMirror",MakeMirror,
+"ScopeType",s,
+"PropertyType",q,
+"PropertyAttribute",r,
+"Mirror",Mirror,
+"ValueMirror",ValueMirror,
+"UndefinedMirror",UndefinedMirror,
+"NullMirror",NullMirror,
+"BooleanMirror",BooleanMirror,
+"NumberMirror",NumberMirror,
+"StringMirror",StringMirror,
+"SymbolMirror",SymbolMirror,
+"ObjectMirror",ObjectMirror,
+"FunctionMirror",FunctionMirror,
+"UnresolvedFunctionMirror",UnresolvedFunctionMirror,
+"ArrayMirror",ArrayMirror,
+"DateMirror",DateMirror,
+"RegExpMirror",RegExpMirror,
+"ErrorMirror",ErrorMirror,
+"PromiseMirror",PromiseMirror,
+"MapMirror",MapMirror,
+"SetMirror",SetMirror,
+"IteratorMirror",IteratorMirror,
+"GeneratorMirror",GeneratorMirror,
+"PropertyMirror",PropertyMirror,
+"InternalPropertyMirror",InternalPropertyMirror,
+"FrameMirror",FrameMirror,
+"ScriptMirror",ScriptMirror,
+"ScopeMirror",ScopeMirror,
+"FrameDetails",FrameDetails,
+]);
+})
+
+debugî
+(function(a,b){
+"use strict";
+var c=a.FrameMirror;
+var d=a.Array;
+var e=a.RegExp;
+var f=a.isNaN;
+var g=a.MakeMirror;
+var h=a.Math.min;
+var i=a.Mirror;
+var j=a.ValueMirror;
+var k=10;
+var l={};
+var m=/^(?:\s*(?:\/\*.*?\*\/)*)*/;
+l.DebugEvent={Break:1,
+Exception:2,
+AfterCompile:3,
+CompileError:4,
+AsyncTaskEvent:5};
+l.ExceptionBreak={Caught:0,
+Uncaught:1};
+l.StepAction={StepOut:0,
+StepNext:1,
+StepIn:2};
+l.ScriptType={Native:0,
+Extension:1,
+Normal:2,
+Wasm:3};
+l.ScriptCompilationType={Host:0,
+Eval:1,
+JSON:2};
+l.ScriptBreakPointType={ScriptId:0,
+ScriptName:1,
+ScriptRegExp:2};
+function ScriptTypeFlag(n){
+return(1<<n);
+}
+var o=0;
+var p=1;
+var q=[];
+var r=[];
+var s={
+breakPointsActive:{
+value:true,
+getValue:function(){return this.value;},
+setValue:function(t){
+this.value=!!t;
+%SetBreakPointsActive(this.value);
+}
+},
+breakOnCaughtException:{
+getValue:function(){return l.isBreakOnException();},
+setValue:function(t){
+if(t){
+l.setBreakOnException();
+}else{
+l.clearBreakOnException();
+}
+}
+},
+breakOnUncaughtException:{
+getValue:function(){return l.isBreakOnUncaughtException();},
+setValue:function(t){
+if(t){
+l.setBreakOnUncaughtException();
+}else{
+l.clearBreakOnUncaughtException();
+}
+}
+},
+};
+function MakeBreakPoint(u,v){
+var w=new BreakPoint(u,v);
+q.push(w);
+return w;
+}
+function BreakPoint(u,v){
+this.source_position_=u;
+if(v){
+this.script_break_point_=v;
+}else{
+this.number_=p++;
+}
+this.active_=true;
+this.condition_=null;
+}
+BreakPoint.prototype.number=function(){
+return this.number_;
+};
+BreakPoint.prototype.func=function(){
+return this.func_;
+};
+BreakPoint.prototype.source_position=function(){
+return this.source_position_;
+};
+BreakPoint.prototype.active=function(){
+if(this.script_break_point()){
+return this.script_break_point().active();
+}
+return this.active_;
+};
+BreakPoint.prototype.condition=function(){
+if(this.script_break_point()&&this.script_break_point().condition()){
+return this.script_break_point().condition();
+}
+return this.condition_;
+};
+BreakPoint.prototype.script_break_point=function(){
+return this.script_break_point_;
+};
+BreakPoint.prototype.enable=function(){
+this.active_=true;
+};
+BreakPoint.prototype.disable=function(){
+this.active_=false;
+};
+BreakPoint.prototype.setCondition=function(x){
+this.condition_=x;
+};
+BreakPoint.prototype.isTriggered=function(y){
+if(!this.active())return false;
+if(this.condition()){
+try{
+var z=y.frame(0).evaluate(this.condition());
+if(!(z instanceof j)||!z.value_){
+return false;
+}
+}catch(e){
+return false;
+}
+}
+return true;
+};
+function IsBreakPointTriggered(A,w){
+return w.isTriggered(MakeExecutionState(A));
+}
+function ScriptBreakPoint(n,script_id_or_name,opt_line,opt_column,
+opt_groupId){
+this.type_=n;
+if(n==l.ScriptBreakPointType.ScriptId){
+this.script_id_=script_id_or_name;
+}else if(n==l.ScriptBreakPointType.ScriptName){
+this.script_name_=script_id_or_name;
+}else if(n==l.ScriptBreakPointType.ScriptRegExp){
+this.script_regexp_object_=new e(script_id_or_name);
+}else{
+throw %make_error(2,"Unexpected breakpoint type "+n);
+}
+this.line_=opt_line||0;
+this.column_=opt_column;
+this.groupId_=opt_groupId;
+this.active_=true;
+this.condition_=null;
+this.break_points_=[];
+}
+ScriptBreakPoint.prototype.number=function(){
+return this.number_;
+};
+ScriptBreakPoint.prototype.groupId=function(){
+return this.groupId_;
+};
+ScriptBreakPoint.prototype.type=function(){
+return this.type_;
+};
+ScriptBreakPoint.prototype.script_id=function(){
+return this.script_id_;
+};
+ScriptBreakPoint.prototype.script_name=function(){
+return this.script_name_;
+};
+ScriptBreakPoint.prototype.script_regexp_object=function(){
+return this.script_regexp_object_;
+};
+ScriptBreakPoint.prototype.line=function(){
+return this.line_;
+};
+ScriptBreakPoint.prototype.column=function(){
+return this.column_;
+};
+ScriptBreakPoint.prototype.actual_locations=function(){
+var B=[];
+for(var C=0;C<this.break_points_.length;C++){
+B.push(this.break_points_[C].actual_location);
+}
+return B;
+};
+ScriptBreakPoint.prototype.update_positions=function(D,E){
+this.line_=D;
+this.column_=E;
+};
+ScriptBreakPoint.prototype.active=function(){
+return this.active_;
+};
+ScriptBreakPoint.prototype.condition=function(){
+return this.condition_;
+};
+ScriptBreakPoint.prototype.enable=function(){
+this.active_=true;
+};
+ScriptBreakPoint.prototype.disable=function(){
+this.active_=false;
+};
+ScriptBreakPoint.prototype.setCondition=function(x){
+this.condition_=x;
+};
+ScriptBreakPoint.prototype.matchesScript=function(F){
+if(this.type_==l.ScriptBreakPointType.ScriptId){
+return this.script_id_==F.id;
+}else{
+if(!(F.line_offset<=this.line_&&
+this.line_<F.line_offset+%ScriptLineCount(F))){
+return false;
+}
+if(this.type_==l.ScriptBreakPointType.ScriptName){
+return this.script_name_==F.nameOrSourceURL();
+}else if(this.type_==l.ScriptBreakPointType.ScriptRegExp){
+return this.script_regexp_object_.test(F.nameOrSourceURL());
+}else{
+throw %make_error(2,"Unexpected breakpoint type "+this.type_);
+}
+}
+};
+ScriptBreakPoint.prototype.set=function(F){
+var E=this.column();
+var D=this.line();
+if((E===(void 0))){
+var G=%ScriptSourceLine(F,D||F.line_offset);
+if(!F.sourceColumnStart_){
+F.sourceColumnStart_=new d(%ScriptLineCount(F));
+}
+if((F.sourceColumnStart_[D]===(void 0))){
+F.sourceColumnStart_[D]=
+G.match(m)[0].length;
+}
+E=F.sourceColumnStart_[D];
+}
+var H=l.findScriptSourcePosition(F,this.line(),E);
+if((H===null))return;
+var w=MakeBreakPoint(H,this);
+var I=%SetScriptBreakPoint(F,H,
+w);
+if((I===(void 0))){
+I=H;
+}
+var J=F.locationFromPosition(I,true);
+w.actual_location={line:J.line,
+column:J.column,
+script_id:F.id};
+this.break_points_.push(w);
+return w;
+};
+ScriptBreakPoint.prototype.clear=function(){
+var K=[];
+for(var C=0;C<q.length;C++){
+if(q[C].script_break_point()&&
+q[C].script_break_point()===this){
+%ClearBreakPoint(q[C]);
+}else{
+K.push(q[C]);
+}
+}
+q=K;
+this.break_points_=[];
+};
+l.setListener=function(L,M){
+if(!(%IsFunction(L))&&!(L===(void 0))&&!(L===null)){
+throw %make_type_error(37);
+}
+%SetDebugEventListener(L,M);
+};
+l.findScript=function(N){
+if((%IsFunction(N))){
+return %FunctionGetScript(N);
+}else if(%IsRegExp(N)){
+var O=this.scripts();
+var P=null;
+var Q=0;
+for(var C in O){
+var F=O[C];
+if(N.test(F.name)){
+P=F;
+Q++;
+}
+}
+if(Q==1){
+return P;
+}else{
+return(void 0);
+}
+}else{
+return %GetScript(N);
+}
+};
+l.scriptSource=function(N){
+return this.findScript(N).source;
+};
+l.source=function(R){
+if(!(%IsFunction(R)))throw %make_type_error(37);
+return %FunctionGetSourceCode(R);
+};
+l.sourcePosition=function(R){
+if(!(%IsFunction(R)))throw %make_type_error(37);
+return %FunctionGetScriptSourcePosition(R);
+};
+l.findFunctionSourceLocation=function(S,T,U){
+var F=%FunctionGetScript(S);
+var V=%FunctionGetScriptSourcePosition(S);
+return %ScriptLocationFromLine(F,T,U,V);
+};
+l.findScriptSourcePosition=function(F,T,U){
+var W=%ScriptLocationFromLine(F,T,U,0);
+return W?W.position:null;
+};
+l.findBreakPoint=function(X,Y){
+var w;
+for(var C=0;C<q.length;C++){
+if(q[C].number()==X){
+w=q[C];
+if(Y){
+q.splice(C,1);
+}
+break;
+}
+}
+if(w){
+return w;
+}else{
+return this.findScriptBreakPoint(X,Y);
+}
+};
+l.findBreakPointActualLocations=function(X){
+for(var C=0;C<r.length;C++){
+if(r[C].number()==X){
+return r[C].actual_locations();
+}
+}
+for(var C=0;C<q.length;C++){
+if(q[C].number()==X){
+return[q[C].actual_location];
+}
+}
+return[];
+};
+l.setBreakPoint=function(S,T,U,Z){
+if(!(%IsFunction(S)))throw %make_type_error(37);
+if(%FunctionIsAPIFunction(S)){
+throw %make_error(2,'Cannot set break point in native code.');
+}
+var u=
+this.findFunctionSourceLocation(S,T,U).position;
+var F=%FunctionGetScript(S);
+if(F.type==l.ScriptType.Native){
+throw %make_error(2,'Cannot set break point in native code.');
+}
+if(F&&F.id){
+var W=F.locationFromPosition(u,false);
+return this.setScriptBreakPointById(F.id,
+W.line,W.column,
+Z);
+}else{
+var w=MakeBreakPoint(u);
+var I=
+%SetFunctionBreakPoint(S,u,w);
+var J=F.locationFromPosition(I,true);
+w.actual_location={line:J.line,
+column:J.column,
+script_id:F.id};
+w.setCondition(Z);
+return w.number();
+}
+};
+l.setBreakPointByScriptIdAndPosition=function(script_id,H,
+x,enabled)
+{
+var w=MakeBreakPoint(H);
+w.setCondition(x);
+if(!enabled){
+w.disable();
+}
+var F=scriptById(script_id);
+if(F){
+w.actual_position=%SetScriptBreakPoint(F,H,w);
+}
+return w;
+};
+l.enableBreakPoint=function(X){
+var w=this.findBreakPoint(X,false);
+if(w){
+w.enable();
+}
+};
+l.disableBreakPoint=function(X){
+var w=this.findBreakPoint(X,false);
+if(w){
+w.disable();
+}
+};
+l.changeBreakPointCondition=function(X,x){
+var w=this.findBreakPoint(X,false);
+w.setCondition(x);
+};
+l.clearBreakPoint=function(X){
+var w=this.findBreakPoint(X,true);
+if(w){
+return %ClearBreakPoint(w);
+}else{
+w=this.findScriptBreakPoint(X,true);
+if(!w)throw %make_error(2,'Invalid breakpoint');
+}
+};
+l.clearAllBreakPoints=function(){
+for(var C=0;C<q.length;C++){
+var w=q[C];
+%ClearBreakPoint(w);
+}
+q=[];
+};
+l.disableAllBreakPoints=function(){
+for(var C=1;C<p;C++){
+l.disableBreakPoint(C);
+}
+%ChangeBreakOnException(l.ExceptionBreak.Caught,false);
+%ChangeBreakOnException(l.ExceptionBreak.Uncaught,false);
+};
+l.findScriptBreakPoint=function(X,Y){
+var aa;
+for(var C=0;C<r.length;C++){
+if(r[C].number()==X){
+aa=r[C];
+if(Y){
+aa.clear();
+r.splice(C,1);
+}
+break;
+}
+}
+return aa;
+};
+l.setScriptBreakPoint=function(n,script_id_or_name,
+T,U,Z,
+opt_groupId){
+var aa=
+new ScriptBreakPoint(n,script_id_or_name,T,U,
+opt_groupId);
+aa.number_=p++;
+aa.setCondition(Z);
+r.push(aa);
+var O=this.scripts();
+for(var C=0;C<O.length;C++){
+if(aa.matchesScript(O[C])){
+aa.set(O[C]);
+}
+}
+return aa.number();
+};
+l.setScriptBreakPointById=function(script_id,
+T,U,
+Z,opt_groupId){
+return this.setScriptBreakPoint(l.ScriptBreakPointType.ScriptId,
+script_id,T,U,
+Z,opt_groupId);
+};
+l.setScriptBreakPointByName=function(script_name,
+T,U,
+Z,opt_groupId){
+return this.setScriptBreakPoint(l.ScriptBreakPointType.ScriptName,
+script_name,T,U,
+Z,opt_groupId);
+};
+l.setScriptBreakPointByRegExp=function(script_regexp,
+T,U,
+Z,opt_groupId){
+return this.setScriptBreakPoint(l.ScriptBreakPointType.ScriptRegExp,
+script_regexp,T,U,
+Z,opt_groupId);
+};
+l.enableScriptBreakPoint=function(X){
+var aa=this.findScriptBreakPoint(X,false);
+aa.enable();
+};
+l.disableScriptBreakPoint=function(X){
+var aa=this.findScriptBreakPoint(X,false);
+aa.disable();
+};
+l.changeScriptBreakPointCondition=function(
+X,x){
+var aa=this.findScriptBreakPoint(X,false);
+aa.setCondition(x);
+};
+l.scriptBreakPoints=function(){
+return r;
+};
+l.clearStepping=function(){
+%ClearStepping();
+};
+l.setBreakOnException=function(){
+return %ChangeBreakOnException(l.ExceptionBreak.Caught,true);
+};
+l.clearBreakOnException=function(){
+return %ChangeBreakOnException(l.ExceptionBreak.Caught,false);
+};
+l.isBreakOnException=function(){
+return!!%IsBreakOnException(l.ExceptionBreak.Caught);
+};
+l.setBreakOnUncaughtException=function(){
+return %ChangeBreakOnException(l.ExceptionBreak.Uncaught,true);
+};
+l.clearBreakOnUncaughtException=function(){
+return %ChangeBreakOnException(l.ExceptionBreak.Uncaught,false);
+};
+l.isBreakOnUncaughtException=function(){
+return!!%IsBreakOnException(l.ExceptionBreak.Uncaught);
+};
+l.showBreakPoints=function(R,ab){
+if(!(%IsFunction(R)))throw %make_error(37);
+var ac=ab?this.scriptSource(R):this.source(R);
+var ad=ab?0:this.sourcePosition(R);
+var B=%GetBreakLocations(R);
+if(!B)return ac;
+B.sort(function(ae,af){return ae-af;});
+var ag="";
+var ah=0;
+var ai;
+for(var C=0;C<B.length;C++){
+ai=B[C]-ad;
+ag+=ac.slice(ah,ai);
+ag+="[B"+C+"]";
+ah=ai;
+}
+ai=ac.length;
+ag+=ac.substring(ah,ai);
+return ag;
+};
+l.scripts=function(){
+return %DebugGetLoadedScripts();
+};
+function scriptById(aj){
+var O=l.scripts();
+for(var F of O){
+if(F.id==aj)return F;
+}
+return(void 0);
+};
+l.debuggerFlags=function(){
+return s;
+};
+l.MakeMirror=g;
+function MakeExecutionState(A){
+return new ExecutionState(A);
+}
+function ExecutionState(A){
+this.break_id=A;
+this.selected_frame=0;
+}
+ExecutionState.prototype.prepareStep=function(ak){
+if(ak===l.StepAction.StepIn||
+ak===l.StepAction.StepOut||
+ak===l.StepAction.StepNext){
+return %PrepareStep(this.break_id,ak);
+}
+throw %make_type_error(37);
+};
+ExecutionState.prototype.evaluateGlobal=function(ac){
+return g(%DebugEvaluateGlobal(this.break_id,ac));
+};
+ExecutionState.prototype.frameCount=function(){
+return %GetFrameCount(this.break_id);
+};
+ExecutionState.prototype.frame=function(al){
+if(al==null)al=this.selected_frame;
+if(al<0||al>=this.frameCount()){
+throw %make_type_error(36);
+}
+return new c(this.break_id,al);
+};
+ExecutionState.prototype.setSelectedFrame=function(am){
+var C=(%_ToNumber(am));
+if(C<0||C>=this.frameCount()){
+throw %make_type_error(36);
+}
+this.selected_frame=C;
+};
+ExecutionState.prototype.selectedFrame=function(){
+return this.selected_frame;
+};
+function MakeBreakEvent(A,an){
+return new BreakEvent(A,an);
+}
+function BreakEvent(A,an){
+this.frame_=new c(A,0);
+this.break_points_hit_=an;
+}
+BreakEvent.prototype.eventType=function(){
+return l.DebugEvent.Break;
+};
+BreakEvent.prototype.func=function(){
+return this.frame_.func();
+};
+BreakEvent.prototype.sourceLine=function(){
+return this.frame_.sourceLine();
+};
+BreakEvent.prototype.sourceColumn=function(){
+return this.frame_.sourceColumn();
+};
+BreakEvent.prototype.sourceLineText=function(){
+return this.frame_.sourceLineText();
+};
+BreakEvent.prototype.breakPointsHit=function(){
+return this.break_points_hit_;
+};
+function MakeExceptionEvent(A,ao,ap,aq){
+return new ExceptionEvent(A,ao,ap,aq);
+}
+function ExceptionEvent(A,ao,ap,aq){
+this.exec_state_=new ExecutionState(A);
+this.exception_=ao;
+this.uncaught_=ap;
+this.promise_=aq;
+}
+ExceptionEvent.prototype.eventType=function(){
+return l.DebugEvent.Exception;
+};
+ExceptionEvent.prototype.exception=function(){
+return this.exception_;
+};
+ExceptionEvent.prototype.uncaught=function(){
+return this.uncaught_;
+};
+ExceptionEvent.prototype.promise=function(){
+return this.promise_;
+};
+ExceptionEvent.prototype.func=function(){
+return this.exec_state_.frame(0).func();
+};
+ExceptionEvent.prototype.sourceLine=function(){
+return this.exec_state_.frame(0).sourceLine();
+};
+ExceptionEvent.prototype.sourceColumn=function(){
+return this.exec_state_.frame(0).sourceColumn();
+};
+ExceptionEvent.prototype.sourceLineText=function(){
+return this.exec_state_.frame(0).sourceLineText();
+};
+function MakeCompileEvent(F,n){
+return new CompileEvent(F,n);
+}
+function CompileEvent(F,n){
+this.script_=g(F);
+this.type_=n;
+}
+CompileEvent.prototype.eventType=function(){
+return this.type_;
+};
+CompileEvent.prototype.script=function(){
+return this.script_;
+};
+function MakeScriptObject_(F,ar){
+var as={id:F.id(),
+name:F.name(),
+lineOffset:F.lineOffset(),
+columnOffset:F.columnOffset(),
+lineCount:F.lineCount(),
+};
+if(!(F.data()===(void 0))){
+as.data=F.data();
+}
+if(ar){
+as.source=F.source();
+}
+return as;
+}
+function MakeAsyncTaskEvent(n,at){
+return new AsyncTaskEvent(n,at);
+}
+function AsyncTaskEvent(n,at){
+this.type_=n;
+this.id_=at;
+}
+AsyncTaskEvent.prototype.type=function(){
+return this.type_;
+}
+AsyncTaskEvent.prototype.id=function(){
+return this.id_;
+}
+b.InstallConstants(a,[
+"Debug",l,
+"BreakEvent",BreakEvent,
+"CompileEvent",CompileEvent,
+"BreakPoint",BreakPoint,
+]);
+b.InstallConstants(b,[
+"MakeExecutionState",MakeExecutionState,
+"MakeExceptionEvent",MakeExceptionEvent,
+"MakeBreakEvent",MakeBreakEvent,
+"MakeCompileEvent",MakeCompileEvent,
+"MakeAsyncTaskEvent",MakeAsyncTaskEvent,
+"IsBreakPointTriggered",IsBreakPointTriggered,
+]);
+})
+
+ liveedití
+(function(a,b){
+"use strict";
+var c=a.Debug.findScriptSourcePosition;
+var d=a.Array;
+var e=a.Math.floor;
+var f=a.Math.max;
+var g=a.SyntaxError;
+var h;
+function ApplyPatchMultiChunk(script,diff_array,new_source,preview_only,
+change_log){
+var i=script.source;
+var j=GatherCompileInfo(i,script);
+var k=BuildCodeInfoTree(j);
+var l=new PosTranslator(diff_array);
+MarkChangedFunctions(k,l.GetChunks());
+FindLiveSharedInfos(k,script);
+var m;
+try{
+m=GatherCompileInfo(new_source,script);
+}catch(e){
+var n=
+new Failure("Failed to compile new version of script: "+e);
+if(e instanceof g){
+var o={
+type:"liveedit_compile_error",
+syntaxErrorMessage:e.message
+};
+CopyErrorPositionToDetails(e,o);
+n.details=o;
+}
+throw n;
+}
+var p=m.reduce(
+(max,info)=>f(max,info.function_literal_id),0);
+var q=BuildCodeInfoTree(m);
+FindCorrespondingFunctions(k,q);
+var r=new d();
+var s=new d();
+var t=new d();
+var u=new d();
+function HarvestTodo(v){
+function CollectDamaged(w){
+s.push(w);
+for(var x=0;x<w.children.length;x++){
+CollectDamaged(w.children[x]);
+}
+}
+function CollectNew(y){
+for(var x=0;x<y.length;x++){
+t.push(y[x]);
+CollectNew(y[x].children);
+}
+}
+if(v.status==h.DAMAGED){
+CollectDamaged(v);
+return;
+}
+if(v.status==h.UNCHANGED){
+u.push(v);
+}else if(v.status==h.SOURCE_CHANGED){
+u.push(v);
+}else if(v.status==h.CHANGED){
+r.push(v);
+CollectNew(v.unmatched_new_nodes);
+}
+for(var x=0;x<v.children.length;x++){
+HarvestTodo(v.children[x]);
+}
+}
+var z={
+change_tree:DescribeChangeTree(k),
+textual_diff:{
+old_len:i.length,
+new_len:new_source.length,
+chunks:diff_array
+},
+updated:false
+};
+if(preview_only){
+return z;
+}
+HarvestTodo(k);
+var A=new d();
+var B=new d();
+for(var x=0;x<r.length;x++){
+var C=r[x].live_shared_function_infos;
+var D=
+r[x].corresponding_node.info.shared_function_info;
+if(C){
+for(var E=0;E<C.length;E++){
+A.push(C[E]);
+B.push(D);
+}
+}
+}
+var F=
+CheckStackActivations(A,
+B,
+change_log);
+z.stack_modified=F!=0;
+var G;
+if(s.length==0){
+%LiveEditReplaceScript(script,new_source,null);
+G=(void 0);
+}else{
+var H=CreateNameForOldScript(script);
+G=%LiveEditReplaceScript(script,new_source,H);
+var I=new d();
+change_log.push({linked_to_old_script:I});
+for(var x=0;x<s.length;x++){
+LinkToOldScript(s[x],G,
+I);
+}
+z.created_script_name=H;
+}
+for(var x=0;x<r.length;x++){
+PatchFunctionCode(r[x],change_log);
+}
+var J=new d();
+change_log.push({position_patched:J});
+for(var x=0;x<u.length;x++){
+PatchPositions(u[x],diff_array,
+J);
+if(u[x].live_shared_function_infos){
+var K=
+u[x]
+.corresponding_node.info.function_literal_id;
+u[x].live_shared_function_infos.forEach(function(
+info){
+%LiveEditFunctionSourceUpdated(
+info.raw_array,K);
+});
+}
+}
+%LiveEditFixupScript(script,p);
+for(var x=0;x<t.length;x++){
+%LiveEditFunctionSetScript(
+t[x].info.shared_function_info,script);
+}
+z.updated=true;
+return z;
+}
+function GatherCompileInfo(L,M){
+var N=%LiveEditGatherCompileInfo(M,L);
+var O=new d();
+var P=new d();
+for(var x=0;x<N.length;x++){
+var Q=new FunctionCompileInfo(N[x]);
+%LiveEditFunctionSetScript(Q.shared_function_info,(void 0));
+O.push(Q);
+P.push(x);
+}
+for(var x=0;x<O.length;x++){
+var R=x;
+for(var E=x+1;E<O.length;E++){
+if(O[R].start_position>O[E].start_position){
+R=E;
+}
+}
+if(R!=x){
+var S=O[R];
+var T=P[R];
+O[R]=O[x];
+P[R]=P[x];
+O[x]=S;
+P[x]=T;
+}
+}
+var U=0;
+function ResetIndexes(V,W){
+var X=-1;
+while(U<O.length&&
+O[U].outer_index==W){
+var Y=U;
+O[Y].outer_index=V;
+if(X!=-1){
+O[X].next_sibling_index=Y;
+}
+X=Y;
+U++;
+ResetIndexes(Y,P[Y]);
+}
+if(X!=-1){
+O[X].next_sibling_index=-1;
+}
+}
+ResetIndexes(-1,-1);
+Assert(U==O.length);
+return O;
+}
+function PatchFunctionCode(v,Z){
+var D=v.corresponding_node.info;
+if(v.live_shared_function_infos){
+v.live_shared_function_infos.forEach(function(aa){
+%LiveEditReplaceFunctionCode(D.raw_array,
+aa.raw_array);
+for(var x=0;x<v.children.length;x++){
+if(v.children[x].corresponding_node){
+var ab=
+v.children[x].corresponding_node.info.
+shared_function_info;
+if(v.children[x].live_shared_function_infos){
+v.children[x].live_shared_function_infos.
+forEach(function(ac){
+%LiveEditReplaceRefToNestedFunction(
+aa.info,
+ab,
+ac.info);
+});
+}
+}
+}
+});
+Z.push({function_patched:D.function_name});
+}else{
+Z.push({function_patched:D.function_name,
+function_info_not_found:true});
+}
+}
+function LinkToOldScript(ad,G,ae){
+if(ad.live_shared_function_infos){
+ad.live_shared_function_infos.
+forEach(function(Q){
+%LiveEditFunctionSetScript(Q.info,G);
+});
+ae.push({name:ad.info.function_name});
+}else{
+ae.push(
+{name:ad.info.function_name,not_found:true});
+}
+}
+function Assert(af,ag){
+if(!af){
+if(ag){
+throw"Assert "+ag;
+}else{
+throw"Assert";
+}
+}
+}
+function DiffChunk(ah,ai,aj,ak){
+this.pos1=ah;
+this.pos2=ai;
+this.len1=aj;
+this.len2=ak;
+}
+function PosTranslator(al){
+var am=new d();
+var an=0;
+for(var x=0;x<al.length;x+=3){
+var ao=al[x];
+var ap=ao+an;
+var aq=al[x+1];
+var ar=al[x+2];
+am.push(new DiffChunk(ao,ap,aq-ao,
+ar-ap));
+an=ar-aq;
+}
+this.chunks=am;
+}
+PosTranslator.prototype.GetChunks=function(){
+return this.chunks;
+};
+PosTranslator.prototype.Translate=function(as,at){
+var au=this.chunks;
+if(au.length==0||as<au[0].pos1){
+return as;
+}
+var av=0;
+var aw=au.length-1;
+while(av<aw){
+var ax=e((av+aw)/2);
+if(as<au[ax+1].pos1){
+aw=ax;
+}else{
+av=ax+1;
+}
+}
+var ay=au[av];
+if(as>=ay.pos1+ay.len1){
+return as+ay.pos2+ay.len2-ay.pos1-ay.len1;
+}
+if(!at){
+at=PosTranslator.DefaultInsideChunkHandler;
+}
+return at(as,ay);
+};
+PosTranslator.DefaultInsideChunkHandler=function(as,az){
+Assert(false,"Cannot translate position in changed area");
+};
+PosTranslator.ShiftWithTopInsideChunkHandler=
+function(as,az){
+return as-az.pos1+az.pos2;
+};
+var h={
+UNCHANGED:"unchanged",
+SOURCE_CHANGED:"source changed",
+CHANGED:"changed",
+DAMAGED:"damaged"
+};
+function CodeInfoTreeNode(aA,aB,aC){
+this.info=aA;
+this.children=aB;
+this.array_index=aC;
+this.parent=(void 0);
+this.status=h.UNCHANGED;
+this.status_explanation=(void 0);
+this.new_start_pos=(void 0);
+this.new_end_pos=(void 0);
+this.corresponding_node=(void 0);
+this.unmatched_new_nodes=(void 0);
+this.textual_corresponding_node=(void 0);
+this.textually_unmatched_new_nodes=(void 0);
+this.live_shared_function_infos=(void 0);
+}
+function BuildCodeInfoTree(aD){
+var aE=0;
+function BuildNode(){
+var aF=aE;
+aE++;
+var aG=new d();
+while(aE<aD.length&&
+aD[aE].outer_index==aF){
+aG.push(BuildNode());
+}
+var w=new CodeInfoTreeNode(aD[aF],aG,
+aF);
+for(var x=0;x<aG.length;x++){
+aG[x].parent=w;
+}
+return w;
+}
+var aH=BuildNode();
+Assert(aE==aD.length);
+return aH;
+}
+function MarkChangedFunctions(aI,am){
+var aJ=new function(){
+var aK=0;
+var aL=0;
+this.current=function(){return am[aK];};
+this.next=function(){
+var ay=am[aK];
+aL=ay.pos2+ay.len2-(ay.pos1+ay.len1);
+aK++;
+};
+this.done=function(){return aK>=am.length;};
+this.TranslatePos=function(as){return as+aL;};
+};
+function ProcessInternals(aM){
+aM.new_start_pos=aJ.TranslatePos(
+aM.info.start_position);
+var aN=0;
+var aO=false;
+var aP=false;
+while(!aJ.done()&&
+aJ.current().pos1<aM.info.end_position){
+if(aN<aM.children.length){
+var aQ=aM.children[aN];
+if(aQ.info.end_position<=aJ.current().pos1){
+ProcessUnchangedChild(aQ);
+aN++;
+continue;
+}else if(aQ.info.start_position>=
+aJ.current().pos1+aJ.current().len1){
+aO=true;
+aJ.next();
+continue;
+}else if(aQ.info.start_position<=aJ.current().pos1&&
+aQ.info.end_position>=aJ.current().pos1+
+aJ.current().len1){
+ProcessInternals(aQ);
+aP=aP||
+(aQ.status!=h.UNCHANGED);
+aO=aO||
+(aQ.status==h.DAMAGED);
+aN++;
+continue;
+}else{
+aO=true;
+aQ.status=h.DAMAGED;
+aQ.status_explanation=
+"Text diff overlaps with function boundary";
+aN++;
+continue;
+}
+}else{
+if(aJ.current().pos1+aJ.current().len1<=
+aM.info.end_position){
+aM.status=h.CHANGED;
+aJ.next();
+continue;
+}else{
+aM.status=h.DAMAGED;
+aM.status_explanation=
+"Text diff overlaps with function boundary";
+return;
+}
+}
+Assert("Unreachable",false);
+}
+while(aN<aM.children.length){
+var aQ=aM.children[aN];
+ProcessUnchangedChild(aQ);
+aN++;
+}
+if(aO){
+aM.status=h.CHANGED;
+}else if(aP){
+aM.status=h.SOURCE_CHANGED;
+}
+aM.new_end_pos=
+aJ.TranslatePos(aM.info.end_position);
+}
+function ProcessUnchangedChild(w){
+w.new_start_pos=aJ.TranslatePos(w.info.start_position);
+w.new_end_pos=aJ.TranslatePos(w.info.end_position);
+}
+ProcessInternals(aI);
+}
+function FindCorrespondingFunctions(aR,aS){
+function ProcessNode(v,aT){
+var aU=
+IsFunctionContextLocalsChanged(v.info,aT.info);
+if(aU){
+v.status=h.CHANGED;
+}
+var aV=v.children;
+var aW=aT.children;
+var aX=[];
+var aY=[];
+var aZ=0;
+var ba=0;
+while(aZ<aV.length){
+if(aV[aZ].status==h.DAMAGED){
+aZ++;
+}else if(ba<aW.length){
+if(aW[ba].info.start_position<
+aV[aZ].new_start_pos){
+aX.push(aW[ba]);
+aY.push(aW[ba]);
+ba++;
+}else if(aW[ba].info.start_position==
+aV[aZ].new_start_pos){
+if(aW[ba].info.end_position==
+aV[aZ].new_end_pos){
+aV[aZ].corresponding_node=
+aW[ba];
+aV[aZ].textual_corresponding_node=
+aW[ba];
+if(aU){
+aV[aZ].status=h.DAMAGED;
+aV[aZ].status_explanation=
+"Enclosing function is now incompatible. "+
+aU;
+aV[aZ].corresponding_node=(void 0);
+}else if(aV[aZ].status!=
+h.UNCHANGED){
+ProcessNode(aV[aZ],
+aW[ba]);
+if(aV[aZ].status==h.DAMAGED){
+aX.push(
+aV[aZ].corresponding_node);
+aV[aZ].corresponding_node=(void 0);
+v.status=h.CHANGED;
+}
+}else{
+ProcessNode(aV[aZ],aW[ba]);
+}
+}else{
+aV[aZ].status=h.DAMAGED;
+aV[aZ].status_explanation=
+"No corresponding function in new script found";
+v.status=h.CHANGED;
+aX.push(aW[ba]);
+aY.push(aW[ba]);
+}
+ba++;
+aZ++;
+}else{
+aV[aZ].status=h.DAMAGED;
+aV[aZ].status_explanation=
+"No corresponding function in new script found";
+v.status=h.CHANGED;
+aZ++;
+}
+}else{
+aV[aZ].status=h.DAMAGED;
+aV[aZ].status_explanation=
+"No corresponding function in new script found";
+v.status=h.CHANGED;
+aZ++;
+}
+}
+while(ba<aW.length){
+aX.push(aW[ba]);
+aY.push(aW[ba]);
+ba++;
+}
+if(v.status==h.CHANGED){
+if(v.info.param_num!=aT.info.param_num){
+v.status=h.DAMAGED;
+v.status_explanation="Changed parameter number: "+
+v.info.param_num+" and "+aT.info.param_num;
+}
+}
+v.unmatched_new_nodes=aX;
+v.textually_unmatched_new_nodes=
+aY;
+}
+ProcessNode(aR,aS);
+aR.corresponding_node=aS;
+aR.textual_corresponding_node=aS;
+Assert(aR.status!=h.DAMAGED,
+"Script became damaged");
+}
+function FindLiveSharedInfos(aR,M){
+var bb=%LiveEditFindSharedFunctionInfosForScript(M);
+var bc=new d();
+for(var x=0;x<bb.length;x++){
+bc.push(new SharedInfoWrapper(bb[x]));
+}
+function FindFunctionInfos(O){
+var bd=[];
+for(var x=0;x<bc.length;x++){
+var be=bc[x];
+if(be.start_position==O.start_position&&
+be.end_position==O.end_position){
+bd.push(be);
+}
+}
+if(bd.length>0){
+return bd;
+}
+}
+function TraverseTree(w){
+w.live_shared_function_infos=FindFunctionInfos(w.info);
+for(var x=0;x<w.children.length;x++){
+TraverseTree(w.children[x]);
+}
+}
+TraverseTree(aR);
+}
+function FunctionCompileInfo(bf){
+this.function_name=bf[0];
+this.start_position=bf[1];
+this.end_position=bf[2];
+this.param_num=bf[3];
+this.scope_info=bf[4];
+this.outer_index=bf[5];
+this.shared_function_info=bf[6];
+this.function_literal_id=bf[7];
+this.next_sibling_index=null;
+this.raw_array=bf;
+}
+function SharedInfoWrapper(bf){
+this.function_name=bf[0];
+this.start_position=bf[1];
+this.end_position=bf[2];
+this.info=bf[3];
+this.raw_array=bf;
+}
+function PatchPositions(ad,al,ae){
+if(ad.live_shared_function_infos){
+ad.live_shared_function_infos.forEach(function(Q){
+%LiveEditPatchFunctionPositions(Q.raw_array,
+al);
+});
+ae.push({name:ad.info.function_name});
+}else{
+ae.push(
+{name:ad.info.function_name,info_not_found:true});
+}
+}
+function CreateNameForOldScript(M){
+return M.name+" (old)";
+}
+function IsFunctionContextLocalsChanged(bg,bh){
+var bi=bg.scope_info;
+var bj=bh.scope_info;
+var bk;
+var bl;
+if(bi){
+bk=bi.toString();
+}else{
+bk="";
+}
+if(bj){
+bl=bj.toString();
+}else{
+bl="";
+}
+if(bk!=bl){
+return"Variable map changed: ["+bk+
+"] => ["+bl+"]";
+}
+return;
+}
+var bm;
+function CheckStackActivations(old_shared_wrapper_list,
+new_shared_list,
+Z){
+var bn=new d();
+for(var x=0;x<old_shared_wrapper_list.length;x++){
+bn[x]=old_shared_wrapper_list[x].info;
+}
+var bo=%LiveEditCheckAndDropActivations(
+bn,new_shared_list,true);
+if(bo[old_shared_wrapper_list.length]){
+throw new Failure(bo[old_shared_wrapper_list.length]);
+}
+var bp=new d();
+var bq=new d();
+for(var x=0;x<bn.length;x++){
+var br=old_shared_wrapper_list[x];
+if(bo[x]==bm.REPLACED_ON_ACTIVE_STACK){
+bq.push({name:br.function_name});
+}else if(bo[x]!=bm.AVAILABLE_FOR_PATCH){
+var bs={
+name:br.function_name,
+start_pos:br.start_position,
+end_pos:br.end_position,
+replace_problem:
+bm.SymbolName(bo[x])
+};
+bp.push(bs);
+}
+}
+if(bq.length>0){
+Z.push({dropped_from_stack:bq});
+}
+if(bp.length>0){
+Z.push({functions_on_stack:bp});
+throw new Failure("Blocked by functions on stack");
+}
+return bq.length;
+}
+var bm={
+AVAILABLE_FOR_PATCH:1,
+BLOCKED_ON_ACTIVE_STACK:2,
+BLOCKED_ON_OTHER_STACK:3,
+BLOCKED_UNDER_NATIVE_CODE:4,
+REPLACED_ON_ACTIVE_STACK:5,
+BLOCKED_UNDER_GENERATOR:6,
+BLOCKED_ACTIVE_GENERATOR:7,
+BLOCKED_NO_NEW_TARGET_ON_RESTART:8
+};
+bm.SymbolName=function(bt){
+var bu=bm;
+for(var bv in bu){
+if(bu[bv]==bt){
+return bv;
+}
+}
+};
+function Failure(ag){
+this.message=ag;
+}
+Failure.prototype.toString=function(){
+return"LiveEdit Failure: "+this.message;
+};
+function CopyErrorPositionToDetails(bw,o){
+function createPositionStruct(M,bx){
+if(bx==-1)return;
+var by=M.locationFromPosition(bx,true);
+if(by==null)return;
+return{
+line:by.line+1,
+column:by.column+1,
+position:bx
+};
+}
+if(!("scriptObject"in bw)||!("startPosition"in bw)){
+return;
+}
+var M=bw.scriptObject;
+var bz={
+start:createPositionStruct(M,bw.startPosition),
+end:createPositionStruct(M,bw.endPosition)
+};
+o.position=bz;
+}
+function SetScriptSource(M,bA,bB,Z){
+var i=M.source;
+var bC=CompareStrings(i,bA);
+return ApplyPatchMultiChunk(M,bC,bA,bB,
+Z);
+}
+function CompareStrings(bD,bE){
+return %LiveEditCompareStrings(bD,bE);
+}
+function ApplySingleChunkPatch(M,change_pos,change_len,new_str,
+Z){
+var i=M.source;
+var bA=i.substring(0,change_pos)+
+new_str+i.substring(change_pos+change_len);
+return ApplyPatchMultiChunk(M,
+[change_pos,change_pos+change_len,change_pos+new_str.length],
+bA,false,Z);
+}
+function DescribeChangeTree(aR){
+function ProcessOldNode(w){
+var bF=[];
+for(var x=0;x<w.children.length;x++){
+var aQ=w.children[x];
+if(aQ.status!=h.UNCHANGED){
+bF.push(ProcessOldNode(aQ));
+}
+}
+var bG=[];
+if(w.textually_unmatched_new_nodes){
+for(var x=0;x<w.textually_unmatched_new_nodes.length;x++){
+var aQ=w.textually_unmatched_new_nodes[x];
+bG.push(ProcessNewNode(aQ));
+}
+}
+var bH={
+name:w.info.function_name,
+positions:DescribePositions(w),
+status:w.status,
+children:bF,
+new_children:bG
+};
+if(w.status_explanation){
+bH.status_explanation=w.status_explanation;
+}
+if(w.textual_corresponding_node){
+bH.new_positions=DescribePositions(w.textual_corresponding_node);
+}
+return bH;
+}
+function ProcessNewNode(w){
+var bF=[];
+if(false){
+for(var x=0;x<w.children.length;x++){
+bF.push(ProcessNewNode(w.children[x]));
+}
+}
+var bH={
+name:w.info.function_name,
+positions:DescribePositions(w),
+children:bF,
+};
+return bH;
+}
+function DescribePositions(w){
+return{
+start_position:w.info.start_position,
+end_position:w.info.end_position
+};
+}
+return ProcessOldNode(aR);
+}
+var bI={};
+bI.SetScriptSource=SetScriptSource;
+bI.ApplyPatchMultiChunk=ApplyPatchMultiChunk;
+bI.Failure=Failure;
+bI.TestApi={
+PosTranslator:PosTranslator,
+CompareStrings:CompareStrings,
+ApplySingleChunkPatch:ApplySingleChunkPatch
+};
+b.InstallConstants(b,[
+"SetScriptSource",bI.SetScriptSource,
+]);
+a.Debug.LiveEdit=bI;
+})
+
+, prologueÙ"
+(function(a,b,c){
+"use strict";
+%CheckIsBootstrapping();
+var d=(void 0);
+var e=%ExportFromRuntime({});
+function Export(f){
+f(e);
+}
+function Import(f){
+f.next=d;
+d=f;
+}
+function ImportNow(g){
+return e[g];
+}
+function InstallConstants(h,i){
+%CheckIsBootstrapping();
+%OptimizeObjectForAddingMultipleProperties(h,i.length>>1);
+var j=2|4|1;
+for(var k=0;k<i.length;k+=2){
+var g=i[k];
+var l=i[k+1];
+%AddNamedProperty(h,g,l,j);
+}
+%ToFastProperties(h);
+}
+function SetUpLockedPrototype(
+constructor,fields,methods){
+%CheckIsBootstrapping();
+var m=constructor.prototype;
+var n=(methods.length>>1)+(fields?fields.length:0);
+if(n>=4){
+%OptimizeObjectForAddingMultipleProperties(m,n);
+}
+if(fields){
+for(var k=0;k<fields.length;k++){
+%AddNamedProperty(m,fields[k],
+(void 0),2|4);
+}
+}
+for(var k=0;k<methods.length;k+=2){
+var o=methods[k];
+var f=methods[k+1];
+%AddNamedProperty(m,o,f,2|4|1);
+%SetNativeFlag(f);
+}
+%InternalSetPrototype(m,null);
+%ToFastProperties(m);
+}
+function PostNatives(b){
+%CheckIsBootstrapping();
+for(;!(d===(void 0));d=d.next){
+d(e);
+}
+e=(void 0);
+b.Export=(void 0);
+b.Import=(void 0);
+b.ImportNow=(void 0);
+b.PostNatives=(void 0);
+}
+%OptimizeObjectForAddingMultipleProperties(b,14);
+b.Import=Import;
+b.ImportNow=ImportNow;
+b.Export=Export;
+b.InstallConstants=InstallConstants;
+b.SetUpLockedPrototype=SetUpLockedPrototype;
+b.PostNatives=PostNatives;
+%ToFastProperties(b);
+%OptimizeObjectForAddingMultipleProperties(c,11);
+c.logStackTrace=function logStackTrace(){
+%DebugTrace();
+};
+c.log=function log(){
+let message='';
+for(const arg of arguments){
+message+=arg;
+}
+%GlobalPrint(message);
+};
+c.createPrivateSymbol=function createPrivateSymbol(g){
+return %CreatePrivateSymbol(g);
+};
+c.simpleBind=function simpleBind(p,q){
+return function(...args){
+return %reflect_apply(p,q,args);
+};
+};
+c.uncurryThis=function uncurryThis(p){
+return function(q,...args){
+return %reflect_apply(p,q,args);
+};
+};
+c.rejectPromise=function rejectPromise(r,s){
+%promise_internal_reject(r,s,true);
+}
+c.markPromiseAsHandled=function markPromiseAsHandled(r){
+%PromiseMarkAsHandled(r);
+};
+c.promiseState=function promiseState(r){
+return %PromiseStatus(r);
+};
+c.kPROMISE_PENDING=0;
+c.kPROMISE_FULFILLED=1;
+c.kPROMISE_REJECTED=2;
+%ToFastProperties(c);
+})
+
+$v8natives•
+(function(a,b){
+"use strict";
+%CheckIsBootstrapping();
+var c=a.Object;
+var d=b.ImportNow("iterator_symbol");
+%DefineMethodsInternal(c.prototype,class{
+toLocaleString(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Object.prototype.toLocaleString");
+return this.toString();
+}},-1);
+function GetMethod(e,f){
+var g=e[f];
+if((g==null))return(void 0);
+if((typeof(g)==='function'))return g;
+throw %make_type_error(16,typeof g);
+}
+function GetIterator(e,h){
+if((h===(void 0))){
+h=e[d];
+}
+if(!(typeof(h)==='function')){
+throw %make_type_error(76,e);
+}
+var i=%_Call(h,e);
+if(!(%_IsJSReceiver(i))){
+throw %make_type_error(69,i);
+}
+return i;
+}
+b.Export(function(j){
+j.GetIterator=GetIterator;
+j.GetMethod=GetMethod;
+});
+})
+
+array
+(function(a,b,c){
+"use strict";
+%CheckIsBootstrapping();
+var d;
+var e;
+var f=a.Array;
+var g=b.InternalArray;
+var h=a.Object.prototype.hasOwnProperty;
+var i=a.Object.prototype.toString;
+var j=b.ImportNow("iterator_symbol");
+var k=b.ImportNow("unscopables_symbol");
+b.Import(function(l){
+d=l.GetIterator;
+e=l.GetMethod;
+});
+function ArraySpeciesCreate(m,n){
+n=((n)+0);
+var o=%ArraySpeciesConstructor(m);
+return new o(n);
+}
+function KeySortCompare(p,q){
+return p-q;
+}
+function GetSortedArrayKeys(m,r){
+if((typeof(r)==='number')){
+var s=r;
+var t=new g();
+for(var u=0;u<s;++u){
+var v=m[u];
+if(!(v===(void 0))||u in m){
+t.push(u);
+}
+}
+return t;
+}
+return InnerArraySort(r,r.length,KeySortCompare);
+}
+function SparseJoinWithSeparatorJS(m,t,n,w,x){
+var y=t.length;
+var z=new g(y*2);
+for(var u=0;u<y;u++){
+var A=t[u];
+z[u*2]=A;
+z[u*2+1]=ConvertToString(w,m[A]);
+}
+return %SparseJoinWithSeparator(z,n,x);
+}
+function SparseJoin(m,t,w){
+var y=t.length;
+var z=new g(y);
+for(var u=0;u<y;u++){
+z[u]=ConvertToString(w,m[t[u]]);
+}
+return %StringBuilderConcat(z,y,'');
+}
+function UseSparseVariant(m,n,B,C){
+if(!B||n<1000||%HasComplexElements(m)){
+return false;
+}
+if(!%_IsSmi(n)){
+return true;
+}
+var D=n>>2;
+var E=%EstimateNumberOfElements(m);
+return(E<D)&&
+(C>E*4);
+}
+function Stack(){
+this.length=0;
+this.values=new g();
+}
+Stack.prototype.length=null;
+Stack.prototype.values=null;
+function StackPush(F,G){
+F.values[F.length++]=G;
+}
+function StackPop(F){
+F.values[--F.length]=null
+}
+function StackHas(F,H){
+var n=F.length;
+var I=F.values;
+for(var u=0;u<n;u++){
+if(I[u]===H)return true;
+}
+return false;
+}
+var J=new Stack();
+function DoJoin(m,n,B,x,w){
+if(UseSparseVariant(m,n,B,n)){
+%NormalizeElements(m);
+var t=GetSortedArrayKeys(m,%GetArrayKeys(m,n));
+if(x===''){
+if(t.length===0)return'';
+return SparseJoin(m,t,w);
+}else{
+return SparseJoinWithSeparatorJS(
+m,t,n,w,x);
+}
+}
+if(n===1){
+return ConvertToString(w,m[0]);
+}
+var z=new g(n);
+for(var u=0;u<n;u++){
+z[u]=ConvertToString(w,m[u]);
+}
+if(x===''){
+return %StringBuilderConcat(z,n,'');
+}else{
+return %StringBuilderJoin(z,n,x);
+}
+}
+function Join(m,n,x,w){
+if(n===0)return'';
+var B=(%_IsArray(m));
+if(B){
+if(StackHas(J,m))return'';
+StackPush(J,m);
+}
+try{
+return DoJoin(m,n,B,x,w);
+}finally{
+if(B)StackPop(J);
+}
+}
+function ConvertToString(w,K){
+if((K==null))return'';
+return(%_ToString(w?K.toLocaleString():K));
+}
+function SparseSlice(m,L,M,N,O){
+var r=%GetArrayKeys(m,L+M);
+if((typeof(r)==='number')){
+var s=r;
+for(var u=L;u<s;++u){
+var P=m[u];
+if(!(P===(void 0))||u in m){
+%CreateDataProperty(O,u-L,P);
+}
+}
+}else{
+var n=r.length;
+for(var Q=0;Q<n;++Q){
+var A=r[Q];
+if(A>=L){
+var P=m[A];
+if(!(P===(void 0))||A in m){
+%CreateDataProperty(O,A-L,P);
+}
+}
+}
+}
+}
+function SparseMove(m,L,M,N,R){
+if(R===M)return;
+var S=new g(
+((N-M+R)>(0xffffffff)?(0xffffffff):(N-M+R)));
+var T;
+var r=%GetArrayKeys(m,N);
+if((typeof(r)==='number')){
+var s=r;
+for(var u=0;u<L&&u<s;++u){
+var P=m[u];
+if(!(P===(void 0))||u in m){
+S[u]=P;
+}
+}
+for(var u=L+M;u<s;++u){
+var P=m[u];
+if(!(P===(void 0))||u in m){
+S[u-M+R]=P;
+}
+}
+}else{
+var n=r.length;
+for(var Q=0;Q<n;++Q){
+var A=r[Q];
+if(A<L){
+var P=m[A];
+if(!(P===(void 0))||A in m){
+S[A]=P;
+}
+}else if(A>=L+M){
+var P=m[A];
+if(!(P===(void 0))||A in m){
+var U=A-M+R;
+S[U]=P;
+if(U>0xfffffffe){
+T=T||new g();
+T.push(U);
+}
+}
+}
+}
+}
+%MoveArrayContents(S,m);
+if(!(T===(void 0))){
+var n=T.length;
+for(var u=0;u<n;++u){
+var A=T[u];
+m[A]=S[A];
+}
+}
+}
+function SimpleSlice(m,L,M,N,O){
+for(var u=0;u<M;u++){
+var V=L+u;
+if(V in m){
+var P=m[V];
+%CreateDataProperty(O,u,P);
+}
+}
+}
+function SimpleMove(m,L,M,N,R){
+if(R!==M){
+if(R>M){
+for(var u=N-M;u>L;u--){
+var W=u+M-1;
+var X=u+R-1;
+if(W in m){
+m[X]=m[W];
+}else{
+delete m[X];
+}
+}
+}else{
+for(var u=L;u<N-M;u++){
+var W=u+M;
+var X=u+R;
+if(W in m){
+m[X]=m[W];
+}else{
+delete m[X];
+}
+}
+for(var u=N;u>N-M+R;u--){
+delete m[u-1];
+}
+}
+}
+}
+var Y;
+%DefineMethodsInternal(f.prototype,class{toString(){
+var m;
+var Z;
+if((%_IsArray(this))){
+Z=this.join;
+if(Z===Y){
+return Join(this,this.length,',',false);
+}
+m=this;
+}else{
+m=(%_ToObject(this));
+Z=m.join;
+}
+if(!(typeof(Z)==='function')){
+return %_Call(i,m);
+}
+return %_Call(Z,m);
+}},-1);
+function InnerArrayToLocaleString(m,n){
+return Join(m,(%_ToLength(n)),',',true);
+}
+%DefineMethodsInternal(f.prototype,class{toLocaleString(){
+var m=(%_ToObject(this));
+var aa=m.length;
+return InnerArrayToLocaleString(m,aa);
+}},-1);
+function InnerArrayJoin(x,m,n){
+if((x===(void 0))){
+x=',';
+}else{
+x=(%_ToString(x));
+}
+if(n===1){
+var v=m[0];
+if((v==null))return'';
+return(%_ToString(v));
+}
+return Join(m,n,x,false);
+}
+%DefineMethodsInternal(f.prototype,class{join(x){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.join");
+var m=(%_ToObject(this));
+var n=(%_ToLength(m.length));
+return InnerArrayJoin(x,m,n);
+}},-1);
+function ArrayPopFallback(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.pop");
+var m=(%_ToObject(this));
+var ab=(%_ToLength(m.length));
+if(ab==0){
+m.length=ab;
+return;
+}
+ab--;
+var G=m[ab];
+delete m[ab];
+m.length=ab;
+return G;
+}
+function ArrayPushFallback(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.push");
+var m=(%_ToObject(this));
+var ab=(%_ToLength(m.length));
+var ac=arguments.length;
+if(ac>9007199254740991-ab)throw %make_type_error(237,ac,ab);
+for(var u=0;u<ac;u++){
+m[u+ab]=arguments[u];
+}
+var ad=ab+ac;
+m.length=ad;
+return ad;
+}
+function SparseReverse(m,N){
+var t=GetSortedArrayKeys(m,%GetArrayKeys(m,N));
+var ae=t.length-1;
+var af=0;
+while(af<=ae){
+var u=t[af];
+var ag=t[ae];
+var ah=N-ag-1;
+var ai,aj;
+if(ah<=u){
+aj=ag;
+while(t[--ae]==ag){}
+ai=ah;
+}
+if(ah>=u){
+ai=u;
+while(t[++af]==u){}
+aj=N-u-1;
+}
+var ak=m[ai];
+if(!(ak===(void 0))||ai in m){
+var al=m[aj];
+if(!(al===(void 0))||aj in m){
+m[ai]=al;
+m[aj]=ak;
+}else{
+m[aj]=ak;
+delete m[ai];
+}
+}else{
+var al=m[aj];
+if(!(al===(void 0))||aj in m){
+m[ai]=al;
+delete m[aj];
+}
+}
+}
+}
+function PackedArrayReverse(m,N){
+var ag=N-1;
+for(var u=0;u<ag;u++,ag--){
+var ak=m[u];
+var al=m[ag];
+m[u]=al;
+m[ag]=ak;
+}
+return m;
+}
+function GenericArrayReverse(m,N){
+var ag=N-1;
+for(var u=0;u<ag;u++,ag--){
+if(u in m){
+var ak=m[u];
+if(ag in m){
+var al=m[ag];
+m[u]=al;
+m[ag]=ak;
+}else{
+m[ag]=ak;
+delete m[u];
+}
+}else{
+if(ag in m){
+var al=m[ag];
+m[u]=al;
+delete m[ag];
+}
+}
+}
+return m;
+}
+%DefineMethodsInternal(f.prototype,class{reverse(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.reverse");
+var m=(%_ToObject(this));
+var N=(%_ToLength(m.length));
+var am=(%_IsArray(m));
+if(UseSparseVariant(m,N,am,N)){
+%NormalizeElements(m);
+SparseReverse(m,N);
+return m;
+}else if(am&&%_HasFastPackedElements(m)){
+return PackedArrayReverse(m,N);
+}else{
+return GenericArrayReverse(m,N);
+}
+}},-1);
+function ArrayShiftFallback(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.shift");
+var m=(%_ToObject(this));
+var N=(%_ToLength(m.length));
+if(N===0){
+m.length=0;
+return;
+}
+if(%object_is_sealed(m))throw %make_type_error(13);
+var an=m[0];
+if(UseSparseVariant(m,N,(%_IsArray(m)),N)){
+SparseMove(m,0,1,N,0);
+}else{
+SimpleMove(m,0,1,N,0);
+}
+m.length=N-1;
+return an;
+}
+function ArrayUnshiftFallback(ao){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.unshift");
+var m=(%_ToObject(this));
+var N=(%_ToLength(m.length));
+var ap=arguments.length;
+if(N>0&&UseSparseVariant(m,N,(%_IsArray(m)),N)&&
+!%object_is_sealed(m)){
+SparseMove(m,0,0,N,ap);
+}else{
+SimpleMove(m,0,0,N,ap);
+}
+for(var u=0;u<ap;u++){
+m[u]=arguments[u];
+}
+var ad=N+ap;
+m.length=ad;
+return ad;
+}
+function ArraySliceFallback(aq,ar){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.slice");
+var m=(%_ToObject(this));
+var N=(%_ToLength(m.length));
+var L=(%_ToInteger(aq));
+var as=N;
+if(!(ar===(void 0)))as=(%_ToInteger(ar));
+if(L<0){
+L+=N;
+if(L<0)L=0;
+}else{
+if(L>N)L=N;
+}
+if(as<0){
+as+=N;
+if(as<0)as=0;
+}else{
+if(as>N)as=N;
+}
+var at=ArraySpeciesCreate(m,((as-L)>(0)?(as-L):(0)));
+if(as<L)return at;
+if(UseSparseVariant(m,N,(%_IsArray(m)),as-L)){
+%NormalizeElements(m);
+if((%_IsArray(at)))%NormalizeElements(at);
+SparseSlice(m,L,as-L,N,at);
+}else{
+SimpleSlice(m,L,as-L,N,at);
+}
+at.length=as-L;
+return at;
+}
+function ComputeSpliceStartIndex(L,N){
+if(L<0){
+L+=N;
+return L<0?0:L;
+}
+return L>N?N:L;
+}
+function ComputeSpliceDeleteCount(au,ap,N,L){
+var M=0;
+if(ap==1)
+return N-L;
+M=(%_ToInteger(au));
+if(M<0)
+return 0;
+if(M>N-L)
+return N-L;
+return M;
+}
+function ArraySpliceFallback(aq,au){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.splice");
+var ap=arguments.length;
+var m=(%_ToObject(this));
+var N=(%_ToLength(m.length));
+var L=ComputeSpliceStartIndex((%_ToInteger(aq)),N);
+var M=ComputeSpliceDeleteCount(au,ap,N,
+L);
+var O=ArraySpeciesCreate(m,M);
+O.length=M;
+var av=ap>2?ap-2:0;
+if(M!=av&&%object_is_sealed(m)){
+throw %make_type_error(13);
+}else if(M>0&&%object_is_frozen(m)){
+throw %make_type_error(12);
+}
+var aw=M;
+if(av!=M){
+aw+=N-L-M;
+}
+if(UseSparseVariant(m,N,(%_IsArray(m)),aw)){
+%NormalizeElements(m);
+if((%_IsArray(O)))%NormalizeElements(O);
+SparseSlice(m,L,M,N,O);
+SparseMove(m,L,M,N,av);
+}else{
+SimpleSlice(m,L,M,N,O);
+SimpleMove(m,L,M,N,av);
+}
+var u=L;
+var ax=2;
+var ay=arguments.length;
+while(ax<ay){
+m[u++]=arguments[ax++];
+}
+m.length=N-M+av;
+return O;
+}
+function InnerArraySort(m,n,az){
+if(!(typeof(az)==='function')){
+az=function(K,aA){
+if(K===aA)return 0;
+if(%_IsSmi(K)&&%_IsSmi(aA)){
+return %SmiLexicographicCompare(K,aA);
+}
+K=(%_ToString(K));
+aA=(%_ToString(aA));
+if(K==aA)return 0;
+else return K<aA?-1:1;
+};
+}
+function InsertionSort(p,l,aB){
+for(var u=l+1;u<aB;u++){
+var aC=p[u];
+for(var ag=u-1;ag>=l;ag--){
+var aD=p[ag];
+var aE=az(aD,aC);
+if(aE>0){
+p[ag+1]=aD;
+}else{
+break;
+}
+}
+p[ag+1]=aC;
+}
+};
+function GetThirdIndex(p,l,aB){
+var aF=new g();
+var aG=200+((aB-l)&15);
+var ag=0;
+l+=1;
+aB-=1;
+for(var u=l;u<aB;u+=aG){
+aF[ag]=[u,p[u]];
+ag++;
+}
+aF.sort(function(p,q){
+return az(p[1],q[1]);
+});
+var aH=aF[aF.length>>1][0];
+return aH;
+}
+function QuickSort(p,l,aB){
+var aH=0;
+while(true){
+if(aB-l<=10){
+InsertionSort(p,l,aB);
+return;
+}
+if(aB-l>1000){
+aH=GetThirdIndex(p,l,aB);
+}else{
+aH=l+((aB-l)>>1);
+}
+var aI=p[l];
+var aJ=p[aB-1];
+var aK=p[aH];
+var aL=az(aI,aJ);
+if(aL>0){
+var aD=aI;
+aI=aJ;
+aJ=aD;
+}
+var aM=az(aI,aK);
+if(aM>=0){
+var aD=aI;
+aI=aK;
+aK=aJ;
+aJ=aD;
+}else{
+var aN=az(aJ,aK);
+if(aN>0){
+var aD=aJ;
+aJ=aK;
+aK=aD;
+}
+}
+p[l]=aI;
+p[aB-1]=aK;
+var aO=aJ;
+var aP=l+1;
+var aQ=aB-1;
+p[aH]=p[aP];
+p[aP]=aO;
+partition:for(var u=aP+1;u<aQ;u++){
+var aC=p[u];
+var aE=az(aC,aO);
+if(aE<0){
+p[u]=p[aP];
+p[aP]=aC;
+aP++;
+}else if(aE>0){
+do{
+aQ--;
+if(aQ==u)break partition;
+var aR=p[aQ];
+aE=az(aR,aO);
+}while(aE>0);
+p[u]=p[aQ];
+p[aQ]=aC;
+if(aE<0){
+aC=p[u];
+p[u]=p[aP];
+p[aP]=aC;
+aP++;
+}
+}
+}
+if(aB-aQ<aP-l){
+QuickSort(p,aQ,aB);
+aB=aP;
+}else{
+QuickSort(p,l,aP);
+l=aQ;
+}
+}
+};
+function CopyFromPrototype(aS,n){
+var aT=0;
+for(var aU=%object_get_prototype_of(aS);aU;
+aU=%object_get_prototype_of(aU)){
+var r=(%_IsJSProxy(aU))?n:%GetArrayKeys(aU,n);
+if((typeof(r)==='number')){
+var aV=r;
+for(var u=0;u<aV;u++){
+if(!(%_Call(h,aS,u))&&(%_Call(h,aU,u))){
+aS[u]=aU[u];
+if(u>=aT){aT=u+1;}
+}
+}
+}else{
+for(var u=0;u<r.length;u++){
+var V=r[u];
+if(!(%_Call(h,aS,V))&&(%_Call(h,aU,V))){
+aS[V]=aU[V];
+if(V>=aT){aT=V+1;}
+}
+}
+}
+}
+return aT;
+};
+function ShadowPrototypeElements(aS,l,aB){
+for(var aU=%object_get_prototype_of(aS);aU;
+aU=%object_get_prototype_of(aU)){
+var r=(%_IsJSProxy(aU))?aB:%GetArrayKeys(aU,aB);
+if((typeof(r)==='number')){
+var aV=r;
+for(var u=l;u<aV;u++){
+if((%_Call(h,aU,u))){
+aS[u]=(void 0);
+}
+}
+}else{
+for(var u=0;u<r.length;u++){
+var V=r[u];
+if(l<=V&&(%_Call(h,aU,V))){
+aS[V]=(void 0);
+}
+}
+}
+}
+};
+function SafeRemoveArrayHoles(aS){
+var aW=0;
+var aX=n-1;
+var aY=0;
+while(aW<aX){
+while(aW<aX&&
+!(aS[aW]===(void 0))){
+aW++;
+}
+if(!(%_Call(h,aS,aW))){
+aY++;
+}
+while(aW<aX&&
+(aS[aX]===(void 0))){
+if(!(%_Call(h,aS,aX))){
+aY++;
+}
+aX--;
+}
+if(aW<aX){
+aS[aW]=aS[aX];
+aS[aX]=(void 0);
+}
+}
+if(!(aS[aW]===(void 0)))aW++;
+var u;
+for(u=aW;u<n-aY;u++){
+aS[u]=(void 0);
+}
+for(u=n-aY;u<n;u++){
+if(u in %object_get_prototype_of(aS)){
+aS[u]=(void 0);
+}else{
+delete aS[u];
+}
+}
+return aW;
+};
+if(n<2)return m;
+var B=(%_IsArray(m));
+var aZ;
+if(!B){
+aZ=CopyFromPrototype(m,n);
+}
+var ba=%RemoveArrayHoles(m,n);
+if(ba==-1){
+ba=SafeRemoveArrayHoles(m);
+}
+QuickSort(m,0,ba);
+if(!B&&(ba+1<aZ)){
+ShadowPrototypeElements(m,ba,aZ);
+}
+return m;
+}
+%DefineMethodsInternal(f.prototype,class{sort(az){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.sort");
+var m=(%_ToObject(this));
+var n=(%_ToLength(m.length));
+return InnerArraySort(m,n,az);
+}},-1);
+%DefineMethodsInternal(f.prototype,class{lastIndexOf(aC,V){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.lastIndexOf");
+var m=this;
+var n=(%_ToLength(this.length));
+if(n==0)return-1;
+if(arguments.length<2){
+V=n-1;
+}else{
+V=(((%_ToInteger(V)))+0);
+if(V<0)V+=n;
+if(V<0)return-1;
+else if(V>=n)V=n-1;
+}
+var bb=0;
+var aT=V;
+if(UseSparseVariant(m,n,(%_IsArray(m)),V)){
+%NormalizeElements(m);
+var r=%GetArrayKeys(m,V+1);
+if((typeof(r)==='number')){
+aT=r;
+}else{
+if(r.length==0)return-1;
+var bc=GetSortedArrayKeys(m,r);
+var u=bc.length-1;
+while(u>=0){
+var A=bc[u];
+if(m[A]===aC)return A;
+u--;
+}
+return-1;
+}
+}
+if(!(aC===(void 0))){
+for(var u=aT;u>=bb;u--){
+if(m[u]===aC)return u;
+}
+return-1;
+}
+for(var u=aT;u>=bb;u--){
+if((m[u]===(void 0))&&u in m){
+return u;
+}
+}
+return-1;
+}},1);
+%DefineMethodsInternal(f.prototype,class{copyWithin(target,aq,ar){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.copyWithin");
+var m=(%_ToObject(this));
+var n=(%_ToLength(m.length));
+target=(%_ToInteger(target));
+var aB;
+if(target<0){
+aB=((n+target)>(0)?(n+target):(0));
+}else{
+aB=((target)>(n)?(n):(target));
+}
+aq=(%_ToInteger(aq));
+var l;
+if(aq<0){
+l=((n+aq)>(0)?(n+aq):(0));
+}else{
+l=((aq)>(n)?(n):(aq));
+}
+ar=(ar===(void 0))?n:(%_ToInteger(ar));
+var bd;
+if(ar<0){
+bd=((n+ar)>(0)?(n+ar):(0));
+}else{
+bd=((ar)>(n)?(n):(ar));
+}
+var be=((bd-l)>(n-aB)?(n-aB):(bd-l));
+var bf=1;
+if(l<aB&&aB<(l+be)){
+bf=-1;
+l=l+be-1;
+aB=aB+be-1;
+}
+while(be>0){
+if(l in m){
+m[aB]=m[l];
+}else{
+delete m[aB];
+}
+l=l+bf;
+aB=aB+bf;
+be--;
+}
+return m;
+}},2);
+function InnerArrayFind(bg,bh,m,n){
+if(!(typeof(bg)==='function')){
+throw %make_type_error(16,bg);
+}
+for(var u=0;u<n;u++){
+var aC=m[u];
+if(%_Call(bg,bh,aC,u,m)){
+return aC;
+}
+}
+return;
+}
+%DefineMethodsInternal(f.prototype,class{find(bg,bh){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.find");
+var m=(%_ToObject(this));
+var n=(%_ToInteger(m.length));
+return InnerArrayFind(bg,bh,m,n);
+}},1);
+function InnerArrayFindIndex(bg,bh,m,n){
+if(!(typeof(bg)==='function')){
+throw %make_type_error(16,bg);
+}
+for(var u=0;u<n;u++){
+var aC=m[u];
+if(%_Call(bg,bh,aC,u,m)){
+return u;
+}
+}
+return-1;
+}
+%DefineMethodsInternal(f.prototype,class{findIndex(bg,bh){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.findIndex");
+var m=(%_ToObject(this));
+var n=(%_ToInteger(m.length));
+return InnerArrayFindIndex(bg,bh,m,n);
+}},1);
+%DefineMethodsInternal(f.prototype,class{fill(G,aq,ar){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Array.prototype.fill");
+var m=(%_ToObject(this));
+var n=(%_ToLength(m.length));
+var u=(aq===(void 0))?0:(%_ToInteger(aq));
+var ar=(ar===(void 0))?n:(%_ToInteger(ar));
+if(u<0){
+u+=n;
+if(u<0)u=0;
+}else{
+if(u>n)u=n;
+}
+if(ar<0){
+ar+=n;
+if(ar<0)ar=0;
+}else{
+if(ar>n)ar=n;
+}
+if((ar-u)>0&&%object_is_frozen(m)){
+throw %make_type_error(12);
+}
+for(;u<ar;u++)
+m[u]=G;
+return m;
+}},1);
+%DefineMethodsInternal(f,class{'from'(arrayLike,mapfn,receiver){
+var bi=(%_ToObject(arrayLike));
+var bj=!(mapfn===(void 0));
+if(bj){
+if(!(typeof(mapfn)==='function')){
+throw %make_type_error(16,mapfn);
+}
+}
+var bk=e(bi,j);
+var Q;
+var at;
+var bl;
+var bm;
+if(!(bk===(void 0))){
+at=%IsConstructor(this)?new this():[];
+Q=0;
+for(bm of
+{[j](){return d(bi,bk)}}){
+if(bj){
+bl=%_Call(mapfn,receiver,bm,Q);
+}else{
+bl=bm;
+}
+%CreateDataProperty(at,Q,bl);
+Q++;
+}
+at.length=Q;
+return at;
+}else{
+var N=(%_ToLength(bi.length));
+at=%IsConstructor(this)?new this(N):new f(N);
+for(Q=0;Q<N;++Q){
+bm=bi[Q];
+if(bj){
+bl=%_Call(mapfn,receiver,bm,Q);
+}else{
+bl=bm;
+}
+%CreateDataProperty(at,Q,bl);
+}
+at.length=Q;
+return at;
+}
+}},1);
+%DefineMethodsInternal(f,class{of(...args){
+var n=args.length;
+var o=this;
+var m=%IsConstructor(o)?new o(n):[];
+for(var u=0;u<n;u++){
+%CreateDataProperty(m,u,args[u]);
+}
+m.length=n;
+return m;
+}},-1);
+var bn={
+__proto__:null,
+copyWithin:true,
+entries:true,
+fill:true,
+find:true,
+findIndex:true,
+includes:true,
+keys:true,
+};
+%ToFastProperties(bn);
+%AddNamedProperty(f.prototype,k,bn,
+2|1);
+var bo=f.prototype.indexOf;
+var Y=f.prototype.join;
+var bp=f.prototype.pop;
+var bq=f.prototype.push;
+var br=f.prototype.slice;
+var bs=f.prototype.shift;
+var bt=f.prototype.sort;
+var bu=f.prototype.splice;
+var bv=f.prototype.toString;
+var bw=f.prototype.unshift;
+var bx=f.prototype.entries;
+var by=f.prototype.forEach;
+var bz=f.prototype.keys;
+var bA=f.prototype[j];
+b.SetUpLockedPrototype(g,f(),[
+"indexOf",bo,
+"join",Y,
+"pop",bp,
+"push",bq,
+"shift",bs,
+"sort",bt,
+"splice",bu
+]);
+b.SetUpLockedPrototype(c.InternalPackedArray,f(),[
+"push",bq,
+"pop",bp,
+"shift",bs,
+"unshift",bw,
+"splice",bu,
+"slice",br
+]);
+b.Export(function(aB){
+aB.ArrayJoin=Y;
+aB.ArrayPush=bq;
+aB.ArrayToString=bv;
+aB.ArrayValues=bA;
+aB.InnerArrayFind=InnerArrayFind;
+aB.InnerArrayFindIndex=InnerArrayFindIndex;
+aB.InnerArrayJoin=InnerArrayJoin;
+aB.InnerArraySort=InnerArraySort;
+aB.InnerArrayToLocaleString=InnerArrayToLocaleString;
+});
+%InstallToContext([
+"array_entries_iterator",bx,
+"array_for_each_iterator",by,
+"array_keys_iterator",bz,
+"array_values_iterator",bA,
+"array_pop",ArrayPopFallback,
+"array_push",ArrayPushFallback,
+"array_shift",ArrayShiftFallback,
+"array_splice",ArraySpliceFallback,
+"array_slice",ArraySliceFallback,
+"array_unshift",ArrayUnshiftFallback,
+]);
+});
+
+stringMD
+(function(a,b){
+"use strict";
+%CheckIsBootstrapping();
+var c=a.String;
+var d=b.ImportNow("match_symbol");
+var e=b.ImportNow("search_symbol");
+function HtmlEscape(f){
+return %RegExpInternalReplace(/"/g,(%_ToString(f)),"&quot;");
+}
+%DefineMethodsInternal(c.prototype,class{
+match(pattern){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.match");
+if(!(pattern==null)){
+var g=pattern[d];
+if(!(g===(void 0))){
+return %_Call(g,pattern,this);
+}
+}
+var h=(%_ToString(this));
+var i=%RegExpCreate(pattern);
+return i[d](h);
+}
+search(pattern){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.search");
+if(!(pattern==null)){
+var j=pattern[e];
+if(!(j===(void 0))){
+return %_Call(j,pattern,this);
+}
+}
+var h=(%_ToString(this));
+var i=%RegExpCreate(pattern);
+return %_Call(i[e],i,h);
+}
+anchor(name){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.anchor");
+return"<a name=\""+HtmlEscape(name)+"\">"+(%_ToString(this))+
+"</a>";
+}
+big(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.big");
+return"<big>"+(%_ToString(this))+"</big>";
+}
+blink(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.blink");
+return"<blink>"+(%_ToString(this))+"</blink>";
+}
+bold(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.bold");
+return"<b>"+(%_ToString(this))+"</b>";
+}
+fixed(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.fixed");
+return"<tt>"+(%_ToString(this))+"</tt>";
+}
+fontcolor(color){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.fontcolor");
+return"<font color=\""+HtmlEscape(color)+"\">"+(%_ToString(this))+
+"</font>";
+}
+fontsize(size){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.fontsize");
+return"<font size=\""+HtmlEscape(size)+"\">"+(%_ToString(this))+
+"</font>";
+}
+italics(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.italics");
+return"<i>"+(%_ToString(this))+"</i>";
+}
+link(s){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.link");
+return"<a href=\""+HtmlEscape(s)+"\">"+(%_ToString(this))+"</a>";
+}
+small(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.small");
+return"<small>"+(%_ToString(this))+"</small>";
+}
+strike(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.strike");
+return"<strike>"+(%_ToString(this))+"</strike>";
+}
+sub(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.sub");
+return"<sub>"+(%_ToString(this))+"</sub>";
+}
+sup(){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.sup");
+return"<sup>"+(%_ToString(this))+"</sup>";
+}
+repeat(count){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.repeat");
+var k=(%_ToString(this));
+var l=(%_ToInteger(count));
+if(l<0||l===(1/0))throw %make_range_error(163);
+if(k.length===0)return"";
+if(l>%_StringMaxLength())%ThrowInvalidStringLength();
+var m="";
+while(true){
+if(l&1)m+=k;
+l>>=1;
+if(l===0)return m;
+k+=k;
+}
+}
+},-1);
+function StringPad(n,o,p){
+o=(%_ToLength(o));
+var q=n.length;
+if(o<=q)return"";
+if((p===(void 0))){
+p=" ";
+}else{
+p=(%_ToString(p));
+if(p===""){
+return"";
+}
+}
+var r=o-q;
+var s=(r/p.length)|0;
+var t=(r-p.length*s)|0;
+var u="";
+while(true){
+if(s&1)u+=p;
+s>>=1;
+if(s===0)break;
+p+=p;
+}
+if(t){
+u+=%_SubString(p,0,t);
+}
+return u;
+}
+%DefineMethodsInternal(c.prototype,class{
+padStart(o,p){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.padStart");
+var n=(%_ToString(this));
+return StringPad(n,o,p)+n;
+}
+padEnd(o,p){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.padEnd");
+var n=(%_ToString(this));
+return n+StringPad(n,o,p);
+}
+},1);
+%DefineMethodsInternal(c,class{
+raw(callSite){
+var v=arguments.length;
+var w=(%_ToObject(callSite));
+var x=(%_ToObject(w.raw));
+var y=(%_ToLength(x.length));
+if(y<=0)return"";
+var z=(%_ToString(x[0]));
+for(var A=1;A<y;++A){
+if(A<v){
+z+=(%_ToString(arguments[A]));
+}
+z+=(%_ToString(x[A]));
+}
+return z;
+}},-1);
+})
+
+(typedarrayF~
+(function(a,b){
+"use strict";
+%CheckIsBootstrapping();
+var c=b.ImportNow("ArrayToString");
+var d;
+var e;
+var f=a.Array;
+var g=a.ArrayBuffer;
+var h=g.prototype;
+var i=a.Object;
+var j;
+var k;
+var l;
+var m;
+var n;
+var o=b.InternalArray;
+var p=b.ImportNow("iterator_symbol");
+var q=b.ImportNow("species_symbol");
+var r=b.ImportNow("to_string_tag_symbol");
+var s=a.Uint8Array;
+
+var t=a.Int8Array;
+
+var u=a.Uint16Array;
+
+var v=a.Int16Array;
+
+var w=a.Uint32Array;
+
+var x=a.Int32Array;
+
+var y=a.Float32Array;
+
+var z=a.Float64Array;
+
+var A=a.Uint8ClampedArray;
+
+
+var B=%object_get_prototype_of(s);
+b.Import(function(C){
+d=C.GetIterator;
+e=C.GetMethod;
+j=C.InnerArrayFind;
+k=C.InnerArrayFindIndex;
+l=C.InnerArrayJoin;
+m=C.InnerArraySort;
+n=C.InnerArrayToLocaleString;
+});
+function SpeciesConstructor(D,E){
+var F=D.constructor;
+if((F===(void 0))){
+return E;
+}
+if(!(%_IsJSReceiver(F))){
+throw %make_type_error(31);
+}
+var G=F[q];
+if((G==null)){
+return E;
+}
+if(%IsConstructor(G)){
+return G;
+}
+throw %make_type_error(249);
+}
+function ValidateTypedArray(H,I){
+if(!(%_IsTypedArray(H)))throw %make_type_error(79);
+if(%_ArrayBufferViewWasNeutered(H))
+throw %make_type_error(40,I);
+}
+function TypedArrayDefaultConstructor(J){
+switch(%_ClassOf(J)){
+case"Uint8Array":
+return s;
+
+case"Int8Array":
+return t;
+
+case"Uint16Array":
+return u;
+
+case"Int16Array":
+return v;
+
+case"Uint32Array":
+return w;
+
+case"Int32Array":
+return x;
+
+case"Float32Array":
+return y;
+
+case"Float64Array":
+return z;
+
+case"Uint8ClampedArray":
+return A;
+
+
+}
+throw %make_type_error(49,
+"TypedArrayDefaultConstructor",this);
+}
+function TypedArrayCreate(F,K,L,M){
+if((L===(void 0))){
+var N=new F(K);
+}else{
+var N=new F(K,L,M);
+}
+ValidateTypedArray(N,"TypedArrayCreate");
+if((typeof(K)==='number')&&%_TypedArrayGetLength(N)<K){
+throw %make_type_error(265);
+}
+return N;
+}
+function TypedArraySpeciesCreate(O,K,L,M){
+var E=TypedArrayDefaultConstructor(O);
+var F=SpeciesConstructor(O,E);
+return TypedArrayCreate(F,K,L,M);
+}
+function Uint8ArrayConstructByIterable(P,Q,R){
+if(%IterableToListCanBeElided(Q)){
+%typed_array_construct_by_array_like(
+P,Q,Q.length,1);
+}else{
+var S=new o();
+var T=%_Call(R,Q);
+var U={
+__proto__:null
+};
+U[p]=function(){return T;}
+for(var V of U){
+S.push(V);
+}
+%typed_array_construct_by_array_like(P,S,S.length,1);
+}
+}
+function Uint8ArrayConstructByTypedArray(P,J){
+var W=%TypedArrayGetBuffer(J);
+var X=%_TypedArrayGetLength(J);
+var Y=%_ArrayBufferViewGetByteLength(J);
+var Z=X*1;
+%typed_array_construct_by_array_like(P,J,X,1);
+var aa=(%_ClassOf(W)==='SharedArrayBuffer')
+?g
+:SpeciesConstructor(W,g);
+var ab=aa.prototype;
+if((%_IsJSReceiver(ab))&&ab!==h){
+%InternalSetPrototype(%TypedArrayGetBuffer(P),ab);
+}
+}
+function Uint8ArrayConstructor(L,M,ac){
+if(!(new.target===(void 0))){
+if((%_ClassOf(L)==='ArrayBuffer')||(%_ClassOf(L)==='SharedArrayBuffer')){
+%typed_array_construct_by_array_buffer(
+this,L,M,ac,1);
+}else if((%_IsTypedArray(L))){
+Uint8ArrayConstructByTypedArray(this,L);
+}else if((%_IsJSReceiver(L))){
+var R=L[p];
+if((R===(void 0))){
+%typed_array_construct_by_array_like(
+this,L,L.length,1);
+}else{
+Uint8ArrayConstructByIterable(this,L,R);
+}
+}else{
+%typed_array_construct_by_length(this,L,1);
+}
+}else{
+throw %make_type_error(30,"Uint8Array")
+}
+}
+function Uint8ArraySubArray(ad,ae){
+var af=(%_ToInteger(ad));
+if(!(ae===(void 0))){
+var ag=(%_ToInteger(ae));
+var ah=%_TypedArrayGetLength(this);
+}else{
+var ah=%_TypedArrayGetLength(this);
+var ag=ah;
+}
+if(af<0){
+af=((0)>(ah+af)?(0):(ah+af));
+}else{
+af=((af)>(ah)?(ah):(af));
+}
+if(ag<0){
+ag=((0)>(ah+ag)?(0):(ah+ag));
+}else{
+ag=((ag)>(ah)?(ah):(ag));
+}
+if(ag<af){
+ag=af;
+}
+var ai=ag-af;
+var aj=
+%_ArrayBufferViewGetByteOffset(this)+af*1;
+return TypedArraySpeciesCreate(this,%TypedArrayGetBuffer(this),
+aj,ai);
+}
+
+function Int8ArrayConstructByIterable(P,Q,R){
+if(%IterableToListCanBeElided(Q)){
+%typed_array_construct_by_array_like(
+P,Q,Q.length,1);
+}else{
+var S=new o();
+var T=%_Call(R,Q);
+var U={
+__proto__:null
+};
+U[p]=function(){return T;}
+for(var V of U){
+S.push(V);
+}
+%typed_array_construct_by_array_like(P,S,S.length,1);
+}
+}
+function Int8ArrayConstructByTypedArray(P,J){
+var W=%TypedArrayGetBuffer(J);
+var X=%_TypedArrayGetLength(J);
+var Y=%_ArrayBufferViewGetByteLength(J);
+var Z=X*1;
+%typed_array_construct_by_array_like(P,J,X,1);
+var aa=(%_ClassOf(W)==='SharedArrayBuffer')
+?g
+:SpeciesConstructor(W,g);
+var ab=aa.prototype;
+if((%_IsJSReceiver(ab))&&ab!==h){
+%InternalSetPrototype(%TypedArrayGetBuffer(P),ab);
+}
+}
+function Int8ArrayConstructor(L,M,ac){
+if(!(new.target===(void 0))){
+if((%_ClassOf(L)==='ArrayBuffer')||(%_ClassOf(L)==='SharedArrayBuffer')){
+%typed_array_construct_by_array_buffer(
+this,L,M,ac,1);
+}else if((%_IsTypedArray(L))){
+Int8ArrayConstructByTypedArray(this,L);
+}else if((%_IsJSReceiver(L))){
+var R=L[p];
+if((R===(void 0))){
+%typed_array_construct_by_array_like(
+this,L,L.length,1);
+}else{
+Int8ArrayConstructByIterable(this,L,R);
+}
+}else{
+%typed_array_construct_by_length(this,L,1);
+}
+}else{
+throw %make_type_error(30,"Int8Array")
+}
+}
+function Int8ArraySubArray(ad,ae){
+var af=(%_ToInteger(ad));
+if(!(ae===(void 0))){
+var ag=(%_ToInteger(ae));
+var ah=%_TypedArrayGetLength(this);
+}else{
+var ah=%_TypedArrayGetLength(this);
+var ag=ah;
+}
+if(af<0){
+af=((0)>(ah+af)?(0):(ah+af));
+}else{
+af=((af)>(ah)?(ah):(af));
+}
+if(ag<0){
+ag=((0)>(ah+ag)?(0):(ah+ag));
+}else{
+ag=((ag)>(ah)?(ah):(ag));
+}
+if(ag<af){
+ag=af;
+}
+var ai=ag-af;
+var aj=
+%_ArrayBufferViewGetByteOffset(this)+af*1;
+return TypedArraySpeciesCreate(this,%TypedArrayGetBuffer(this),
+aj,ai);
+}
+
+function Uint16ArrayConstructByIterable(P,Q,R){
+if(%IterableToListCanBeElided(Q)){
+%typed_array_construct_by_array_like(
+P,Q,Q.length,2);
+}else{
+var S=new o();
+var T=%_Call(R,Q);
+var U={
+__proto__:null
+};
+U[p]=function(){return T;}
+for(var V of U){
+S.push(V);
+}
+%typed_array_construct_by_array_like(P,S,S.length,2);
+}
+}
+function Uint16ArrayConstructByTypedArray(P,J){
+var W=%TypedArrayGetBuffer(J);
+var X=%_TypedArrayGetLength(J);
+var Y=%_ArrayBufferViewGetByteLength(J);
+var Z=X*2;
+%typed_array_construct_by_array_like(P,J,X,2);
+var aa=(%_ClassOf(W)==='SharedArrayBuffer')
+?g
+:SpeciesConstructor(W,g);
+var ab=aa.prototype;
+if((%_IsJSReceiver(ab))&&ab!==h){
+%InternalSetPrototype(%TypedArrayGetBuffer(P),ab);
+}
+}
+function Uint16ArrayConstructor(L,M,ac){
+if(!(new.target===(void 0))){
+if((%_ClassOf(L)==='ArrayBuffer')||(%_ClassOf(L)==='SharedArrayBuffer')){
+%typed_array_construct_by_array_buffer(
+this,L,M,ac,2);
+}else if((%_IsTypedArray(L))){
+Uint16ArrayConstructByTypedArray(this,L);
+}else if((%_IsJSReceiver(L))){
+var R=L[p];
+if((R===(void 0))){
+%typed_array_construct_by_array_like(
+this,L,L.length,2);
+}else{
+Uint16ArrayConstructByIterable(this,L,R);
+}
+}else{
+%typed_array_construct_by_length(this,L,2);
+}
+}else{
+throw %make_type_error(30,"Uint16Array")
+}
+}
+function Uint16ArraySubArray(ad,ae){
+var af=(%_ToInteger(ad));
+if(!(ae===(void 0))){
+var ag=(%_ToInteger(ae));
+var ah=%_TypedArrayGetLength(this);
+}else{
+var ah=%_TypedArrayGetLength(this);
+var ag=ah;
+}
+if(af<0){
+af=((0)>(ah+af)?(0):(ah+af));
+}else{
+af=((af)>(ah)?(ah):(af));
+}
+if(ag<0){
+ag=((0)>(ah+ag)?(0):(ah+ag));
+}else{
+ag=((ag)>(ah)?(ah):(ag));
+}
+if(ag<af){
+ag=af;
+}
+var ai=ag-af;
+var aj=
+%_ArrayBufferViewGetByteOffset(this)+af*2;
+return TypedArraySpeciesCreate(this,%TypedArrayGetBuffer(this),
+aj,ai);
+}
+
+function Int16ArrayConstructByIterable(P,Q,R){
+if(%IterableToListCanBeElided(Q)){
+%typed_array_construct_by_array_like(
+P,Q,Q.length,2);
+}else{
+var S=new o();
+var T=%_Call(R,Q);
+var U={
+__proto__:null
+};
+U[p]=function(){return T;}
+for(var V of U){
+S.push(V);
+}
+%typed_array_construct_by_array_like(P,S,S.length,2);
+}
+}
+function Int16ArrayConstructByTypedArray(P,J){
+var W=%TypedArrayGetBuffer(J);
+var X=%_TypedArrayGetLength(J);
+var Y=%_ArrayBufferViewGetByteLength(J);
+var Z=X*2;
+%typed_array_construct_by_array_like(P,J,X,2);
+var aa=(%_ClassOf(W)==='SharedArrayBuffer')
+?g
+:SpeciesConstructor(W,g);
+var ab=aa.prototype;
+if((%_IsJSReceiver(ab))&&ab!==h){
+%InternalSetPrototype(%TypedArrayGetBuffer(P),ab);
+}
+}
+function Int16ArrayConstructor(L,M,ac){
+if(!(new.target===(void 0))){
+if((%_ClassOf(L)==='ArrayBuffer')||(%_ClassOf(L)==='SharedArrayBuffer')){
+%typed_array_construct_by_array_buffer(
+this,L,M,ac,2);
+}else if((%_IsTypedArray(L))){
+Int16ArrayConstructByTypedArray(this,L);
+}else if((%_IsJSReceiver(L))){
+var R=L[p];
+if((R===(void 0))){
+%typed_array_construct_by_array_like(
+this,L,L.length,2);
+}else{
+Int16ArrayConstructByIterable(this,L,R);
+}
+}else{
+%typed_array_construct_by_length(this,L,2);
+}
+}else{
+throw %make_type_error(30,"Int16Array")
+}
+}
+function Int16ArraySubArray(ad,ae){
+var af=(%_ToInteger(ad));
+if(!(ae===(void 0))){
+var ag=(%_ToInteger(ae));
+var ah=%_TypedArrayGetLength(this);
+}else{
+var ah=%_TypedArrayGetLength(this);
+var ag=ah;
+}
+if(af<0){
+af=((0)>(ah+af)?(0):(ah+af));
+}else{
+af=((af)>(ah)?(ah):(af));
+}
+if(ag<0){
+ag=((0)>(ah+ag)?(0):(ah+ag));
+}else{
+ag=((ag)>(ah)?(ah):(ag));
+}
+if(ag<af){
+ag=af;
+}
+var ai=ag-af;
+var aj=
+%_ArrayBufferViewGetByteOffset(this)+af*2;
+return TypedArraySpeciesCreate(this,%TypedArrayGetBuffer(this),
+aj,ai);
+}
+
+function Uint32ArrayConstructByIterable(P,Q,R){
+if(%IterableToListCanBeElided(Q)){
+%typed_array_construct_by_array_like(
+P,Q,Q.length,4);
+}else{
+var S=new o();
+var T=%_Call(R,Q);
+var U={
+__proto__:null
+};
+U[p]=function(){return T;}
+for(var V of U){
+S.push(V);
+}
+%typed_array_construct_by_array_like(P,S,S.length,4);
+}
+}
+function Uint32ArrayConstructByTypedArray(P,J){
+var W=%TypedArrayGetBuffer(J);
+var X=%_TypedArrayGetLength(J);
+var Y=%_ArrayBufferViewGetByteLength(J);
+var Z=X*4;
+%typed_array_construct_by_array_like(P,J,X,4);
+var aa=(%_ClassOf(W)==='SharedArrayBuffer')
+?g
+:SpeciesConstructor(W,g);
+var ab=aa.prototype;
+if((%_IsJSReceiver(ab))&&ab!==h){
+%InternalSetPrototype(%TypedArrayGetBuffer(P),ab);
+}
+}
+function Uint32ArrayConstructor(L,M,ac){
+if(!(new.target===(void 0))){
+if((%_ClassOf(L)==='ArrayBuffer')||(%_ClassOf(L)==='SharedArrayBuffer')){
+%typed_array_construct_by_array_buffer(
+this,L,M,ac,4);
+}else if((%_IsTypedArray(L))){
+Uint32ArrayConstructByTypedArray(this,L);
+}else if((%_IsJSReceiver(L))){
+var R=L[p];
+if((R===(void 0))){
+%typed_array_construct_by_array_like(
+this,L,L.length,4);
+}else{
+Uint32ArrayConstructByIterable(this,L,R);
+}
+}else{
+%typed_array_construct_by_length(this,L,4);
+}
+}else{
+throw %make_type_error(30,"Uint32Array")
+}
+}
+function Uint32ArraySubArray(ad,ae){
+var af=(%_ToInteger(ad));
+if(!(ae===(void 0))){
+var ag=(%_ToInteger(ae));
+var ah=%_TypedArrayGetLength(this);
+}else{
+var ah=%_TypedArrayGetLength(this);
+var ag=ah;
+}
+if(af<0){
+af=((0)>(ah+af)?(0):(ah+af));
+}else{
+af=((af)>(ah)?(ah):(af));
+}
+if(ag<0){
+ag=((0)>(ah+ag)?(0):(ah+ag));
+}else{
+ag=((ag)>(ah)?(ah):(ag));
+}
+if(ag<af){
+ag=af;
+}
+var ai=ag-af;
+var aj=
+%_ArrayBufferViewGetByteOffset(this)+af*4;
+return TypedArraySpeciesCreate(this,%TypedArrayGetBuffer(this),
+aj,ai);
+}
+
+function Int32ArrayConstructByIterable(P,Q,R){
+if(%IterableToListCanBeElided(Q)){
+%typed_array_construct_by_array_like(
+P,Q,Q.length,4);
+}else{
+var S=new o();
+var T=%_Call(R,Q);
+var U={
+__proto__:null
+};
+U[p]=function(){return T;}
+for(var V of U){
+S.push(V);
+}
+%typed_array_construct_by_array_like(P,S,S.length,4);
+}
+}
+function Int32ArrayConstructByTypedArray(P,J){
+var W=%TypedArrayGetBuffer(J);
+var X=%_TypedArrayGetLength(J);
+var Y=%_ArrayBufferViewGetByteLength(J);
+var Z=X*4;
+%typed_array_construct_by_array_like(P,J,X,4);
+var aa=(%_ClassOf(W)==='SharedArrayBuffer')
+?g
+:SpeciesConstructor(W,g);
+var ab=aa.prototype;
+if((%_IsJSReceiver(ab))&&ab!==h){
+%InternalSetPrototype(%TypedArrayGetBuffer(P),ab);
+}
+}
+function Int32ArrayConstructor(L,M,ac){
+if(!(new.target===(void 0))){
+if((%_ClassOf(L)==='ArrayBuffer')||(%_ClassOf(L)==='SharedArrayBuffer')){
+%typed_array_construct_by_array_buffer(
+this,L,M,ac,4);
+}else if((%_IsTypedArray(L))){
+Int32ArrayConstructByTypedArray(this,L);
+}else if((%_IsJSReceiver(L))){
+var R=L[p];
+if((R===(void 0))){
+%typed_array_construct_by_array_like(
+this,L,L.length,4);
+}else{
+Int32ArrayConstructByIterable(this,L,R);
+}
+}else{
+%typed_array_construct_by_length(this,L,4);
+}
+}else{
+throw %make_type_error(30,"Int32Array")
+}
+}
+function Int32ArraySubArray(ad,ae){
+var af=(%_ToInteger(ad));
+if(!(ae===(void 0))){
+var ag=(%_ToInteger(ae));
+var ah=%_TypedArrayGetLength(this);
+}else{
+var ah=%_TypedArrayGetLength(this);
+var ag=ah;
+}
+if(af<0){
+af=((0)>(ah+af)?(0):(ah+af));
+}else{
+af=((af)>(ah)?(ah):(af));
+}
+if(ag<0){
+ag=((0)>(ah+ag)?(0):(ah+ag));
+}else{
+ag=((ag)>(ah)?(ah):(ag));
+}
+if(ag<af){
+ag=af;
+}
+var ai=ag-af;
+var aj=
+%_ArrayBufferViewGetByteOffset(this)+af*4;
+return TypedArraySpeciesCreate(this,%TypedArrayGetBuffer(this),
+aj,ai);
+}
+
+function Float32ArrayConstructByIterable(P,Q,R){
+if(%IterableToListCanBeElided(Q)){
+%typed_array_construct_by_array_like(
+P,Q,Q.length,4);
+}else{
+var S=new o();
+var T=%_Call(R,Q);
+var U={
+__proto__:null
+};
+U[p]=function(){return T;}
+for(var V of U){
+S.push(V);
+}
+%typed_array_construct_by_array_like(P,S,S.length,4);
+}
+}
+function Float32ArrayConstructByTypedArray(P,J){
+var W=%TypedArrayGetBuffer(J);
+var X=%_TypedArrayGetLength(J);
+var Y=%_ArrayBufferViewGetByteLength(J);
+var Z=X*4;
+%typed_array_construct_by_array_like(P,J,X,4);
+var aa=(%_ClassOf(W)==='SharedArrayBuffer')
+?g
+:SpeciesConstructor(W,g);
+var ab=aa.prototype;
+if((%_IsJSReceiver(ab))&&ab!==h){
+%InternalSetPrototype(%TypedArrayGetBuffer(P),ab);
+}
+}
+function Float32ArrayConstructor(L,M,ac){
+if(!(new.target===(void 0))){
+if((%_ClassOf(L)==='ArrayBuffer')||(%_ClassOf(L)==='SharedArrayBuffer')){
+%typed_array_construct_by_array_buffer(
+this,L,M,ac,4);
+}else if((%_IsTypedArray(L))){
+Float32ArrayConstructByTypedArray(this,L);
+}else if((%_IsJSReceiver(L))){
+var R=L[p];
+if((R===(void 0))){
+%typed_array_construct_by_array_like(
+this,L,L.length,4);
+}else{
+Float32ArrayConstructByIterable(this,L,R);
+}
+}else{
+%typed_array_construct_by_length(this,L,4);
+}
+}else{
+throw %make_type_error(30,"Float32Array")
+}
+}
+function Float32ArraySubArray(ad,ae){
+var af=(%_ToInteger(ad));
+if(!(ae===(void 0))){
+var ag=(%_ToInteger(ae));
+var ah=%_TypedArrayGetLength(this);
+}else{
+var ah=%_TypedArrayGetLength(this);
+var ag=ah;
+}
+if(af<0){
+af=((0)>(ah+af)?(0):(ah+af));
+}else{
+af=((af)>(ah)?(ah):(af));
+}
+if(ag<0){
+ag=((0)>(ah+ag)?(0):(ah+ag));
+}else{
+ag=((ag)>(ah)?(ah):(ag));
+}
+if(ag<af){
+ag=af;
+}
+var ai=ag-af;
+var aj=
+%_ArrayBufferViewGetByteOffset(this)+af*4;
+return TypedArraySpeciesCreate(this,%TypedArrayGetBuffer(this),
+aj,ai);
+}
+
+function Float64ArrayConstructByIterable(P,Q,R){
+if(%IterableToListCanBeElided(Q)){
+%typed_array_construct_by_array_like(
+P,Q,Q.length,8);
+}else{
+var S=new o();
+var T=%_Call(R,Q);
+var U={
+__proto__:null
+};
+U[p]=function(){return T;}
+for(var V of U){
+S.push(V);
+}
+%typed_array_construct_by_array_like(P,S,S.length,8);
+}
+}
+function Float64ArrayConstructByTypedArray(P,J){
+var W=%TypedArrayGetBuffer(J);
+var X=%_TypedArrayGetLength(J);
+var Y=%_ArrayBufferViewGetByteLength(J);
+var Z=X*8;
+%typed_array_construct_by_array_like(P,J,X,8);
+var aa=(%_ClassOf(W)==='SharedArrayBuffer')
+?g
+:SpeciesConstructor(W,g);
+var ab=aa.prototype;
+if((%_IsJSReceiver(ab))&&ab!==h){
+%InternalSetPrototype(%TypedArrayGetBuffer(P),ab);
+}
+}
+function Float64ArrayConstructor(L,M,ac){
+if(!(new.target===(void 0))){
+if((%_ClassOf(L)==='ArrayBuffer')||(%_ClassOf(L)==='SharedArrayBuffer')){
+%typed_array_construct_by_array_buffer(
+this,L,M,ac,8);
+}else if((%_IsTypedArray(L))){
+Float64ArrayConstructByTypedArray(this,L);
+}else if((%_IsJSReceiver(L))){
+var R=L[p];
+if((R===(void 0))){
+%typed_array_construct_by_array_like(
+this,L,L.length,8);
+}else{
+Float64ArrayConstructByIterable(this,L,R);
+}
+}else{
+%typed_array_construct_by_length(this,L,8);
+}
+}else{
+throw %make_type_error(30,"Float64Array")
+}
+}
+function Float64ArraySubArray(ad,ae){
+var af=(%_ToInteger(ad));
+if(!(ae===(void 0))){
+var ag=(%_ToInteger(ae));
+var ah=%_TypedArrayGetLength(this);
+}else{
+var ah=%_TypedArrayGetLength(this);
+var ag=ah;
+}
+if(af<0){
+af=((0)>(ah+af)?(0):(ah+af));
+}else{
+af=((af)>(ah)?(ah):(af));
+}
+if(ag<0){
+ag=((0)>(ah+ag)?(0):(ah+ag));
+}else{
+ag=((ag)>(ah)?(ah):(ag));
+}
+if(ag<af){
+ag=af;
+}
+var ai=ag-af;
+var aj=
+%_ArrayBufferViewGetByteOffset(this)+af*8;
+return TypedArraySpeciesCreate(this,%TypedArrayGetBuffer(this),
+aj,ai);
+}
+
+function Uint8ClampedArrayConstructByIterable(P,Q,R){
+if(%IterableToListCanBeElided(Q)){
+%typed_array_construct_by_array_like(
+P,Q,Q.length,1);
+}else{
+var S=new o();
+var T=%_Call(R,Q);
+var U={
+__proto__:null
+};
+U[p]=function(){return T;}
+for(var V of U){
+S.push(V);
+}
+%typed_array_construct_by_array_like(P,S,S.length,1);
+}
+}
+function Uint8ClampedArrayConstructByTypedArray(P,J){
+var W=%TypedArrayGetBuffer(J);
+var X=%_TypedArrayGetLength(J);
+var Y=%_ArrayBufferViewGetByteLength(J);
+var Z=X*1;
+%typed_array_construct_by_array_like(P,J,X,1);
+var aa=(%_ClassOf(W)==='SharedArrayBuffer')
+?g
+:SpeciesConstructor(W,g);
+var ab=aa.prototype;
+if((%_IsJSReceiver(ab))&&ab!==h){
+%InternalSetPrototype(%TypedArrayGetBuffer(P),ab);
+}
+}
+function Uint8ClampedArrayConstructor(L,M,ac){
+if(!(new.target===(void 0))){
+if((%_ClassOf(L)==='ArrayBuffer')||(%_ClassOf(L)==='SharedArrayBuffer')){
+%typed_array_construct_by_array_buffer(
+this,L,M,ac,1);
+}else if((%_IsTypedArray(L))){
+Uint8ClampedArrayConstructByTypedArray(this,L);
+}else if((%_IsJSReceiver(L))){
+var R=L[p];
+if((R===(void 0))){
+%typed_array_construct_by_array_like(
+this,L,L.length,1);
+}else{
+Uint8ClampedArrayConstructByIterable(this,L,R);
+}
+}else{
+%typed_array_construct_by_length(this,L,1);
+}
+}else{
+throw %make_type_error(30,"Uint8ClampedArray")
+}
+}
+function Uint8ClampedArraySubArray(ad,ae){
+var af=(%_ToInteger(ad));
+if(!(ae===(void 0))){
+var ag=(%_ToInteger(ae));
+var ah=%_TypedArrayGetLength(this);
+}else{
+var ah=%_TypedArrayGetLength(this);
+var ag=ah;
+}
+if(af<0){
+af=((0)>(ah+af)?(0):(ah+af));
+}else{
+af=((af)>(ah)?(ah):(af));
+}
+if(ag<0){
+ag=((0)>(ah+ag)?(0):(ah+ag));
+}else{
+ag=((ag)>(ah)?(ah):(ag));
+}
+if(ag<af){
+ag=af;
+}
+var ai=ag-af;
+var aj=
+%_ArrayBufferViewGetByteOffset(this)+af*1;
+return TypedArraySpeciesCreate(this,%TypedArrayGetBuffer(this),
+aj,ai);
+}
+
+
+%DefineMethodsInternal(B.prototype,class{subarray(ad,ae){
+switch(%_ClassOf(this)){
+case"Uint8Array":
+return %_Call(Uint8ArraySubArray,this,ad,ae);
+
+case"Int8Array":
+return %_Call(Int8ArraySubArray,this,ad,ae);
+
+case"Uint16Array":
+return %_Call(Uint16ArraySubArray,this,ad,ae);
+
+case"Int16Array":
+return %_Call(Int16ArraySubArray,this,ad,ae);
+
+case"Uint32Array":
+return %_Call(Uint32ArraySubArray,this,ad,ae);
+
+case"Int32Array":
+return %_Call(Int32ArraySubArray,this,ad,ae);
+
+case"Float32Array":
+return %_Call(Float32ArraySubArray,this,ad,ae);
+
+case"Float64Array":
+return %_Call(Float64ArraySubArray,this,ad,ae);
+
+case"Uint8ClampedArray":
+return %_Call(Uint8ClampedArraySubArray,this,ad,ae);
+
+
+}
+throw %make_type_error(49,
+"get %TypedArray%.prototype.subarray",this);
+}},-1);
+%DefineMethodsInternal(B.prototype,class{get[r](){
+if(!(%_IsTypedArray(this)))return;
+var ak=%_ClassOf(this);
+if((ak===(void 0)))return;
+return ak;
+}},-1);
+function InnerTypedArrayFilter(al,am,H,X,an){
+var ao=0;
+for(var ap=0;ap<X;ap++){
+if(ap in H){
+var aq=H[ap];
+if(%_Call(al,am,aq,ap,H)){
+%CreateDataProperty(an,ao,aq);
+ao++;
+}
+}
+}
+return an;
+}
+%DefineMethodsInternal(B.prototype,class{filter(al,thisArg){
+ValidateTypedArray(this,"%TypeArray%.prototype.filter");
+var X=%_TypedArrayGetLength(this);
+if(!(typeof(al)==='function'))throw %make_type_error(16,al);
+var an=new o();
+InnerTypedArrayFilter(al,thisArg,this,X,an);
+var ar=an.length;
+var as=TypedArraySpeciesCreate(this,ar);
+for(var ap=0;ap<ar;ap++){
+as[ap]=an[ap];
+}
+return as;
+}},1);
+%DefineMethodsInternal(B.prototype,class{find(predicate,thisArg){
+ValidateTypedArray(this,"%TypedArray%.prototype.find");
+var X=%_TypedArrayGetLength(this);
+return j(predicate,thisArg,this,X);
+}},1);
+%DefineMethodsInternal(B.prototype,class{findIndex(predicate,thisArg){
+ValidateTypedArray(this,"%TypedArray%.prototype.findIndex");
+var X=%_TypedArrayGetLength(this);
+return k(predicate,thisArg,this,X);
+}},1);
+%DefineMethodsInternal(B.prototype,class{sort(comparefn){
+ValidateTypedArray(this,"%TypedArray%.prototype.sort");
+var X=%_TypedArrayGetLength(this);
+if((comparefn===(void 0))){
+return %TypedArraySortFast(this);
+}
+return m(this,X,comparefn);
+}},-1);
+%DefineMethodsInternal(B.prototype,class{toLocaleString(){
+ValidateTypedArray(this,"%TypedArray%.prototype.toLocaleString");
+var X=%_TypedArrayGetLength(this);
+return n(this,X);
+}},-1);
+%DefineMethodsInternal(B.prototype,class{join(separator){
+ValidateTypedArray(this,"%TypedArray%.prototype.join");
+var X=%_TypedArrayGetLength(this);
+return l(separator,this,X);
+}},-1);
+%DefineMethodsInternal(B,class{of(){
+var X=arguments.length;
+var H=TypedArrayCreate(this,X);
+for(var ap=0;ap<X;ap++){
+H[ap]=arguments[ap];
+}
+return H;
+}},-1);
+function IterableToArrayLike(at){
+var Q=e(at,p);
+if(!(Q===(void 0))){
+var au=new o();
+var ap=0;
+for(var V of
+{[p](){return d(at,Q)}}){
+au[ap]=V;
+ap++;
+}
+var H=[];
+%MoveArrayContents(au,H);
+return H;
+}
+return(%_ToObject(at));
+}
+%DefineMethodsInternal(B,class{'from'(source,mapfn,thisArg){
+if(!%IsConstructor(this))throw %make_type_error(71,this);
+var av;
+if(!(mapfn===(void 0))){
+if(!(typeof(mapfn)==='function'))throw %make_type_error(16,this);
+av=true;
+}else{
+av=false;
+}
+var aw=IterableToArrayLike(source);
+var X=(%_ToLength(aw.length));
+var ax=TypedArrayCreate(this,X);
+var V,ay;
+for(var ap=0;ap<X;ap++){
+V=aw[ap];
+if(av){
+ay=%_Call(mapfn,thisArg,V,ap);
+}else{
+ay=V;
+}
+ax[ap]=ay;
+}
+return ax;
+}},1);
+function TypedArrayConstructor(){
+throw %make_type_error(27,"TypedArray");
+}
+%SetCode(B,TypedArrayConstructor);
+%AddNamedProperty(B.prototype,"toString",c,
+2);
+%SetCode(s,Uint8ArrayConstructor);
+%FunctionSetPrototype(s,new i());
+%InternalSetPrototype(s,B);
+%InternalSetPrototype(s.prototype,B.prototype);
+%AddNamedProperty(s,"BYTES_PER_ELEMENT",1,
+1|2|4);
+%AddNamedProperty(s.prototype,
+"constructor",a.Uint8Array,2);
+%AddNamedProperty(s.prototype,
+"BYTES_PER_ELEMENT",1,
+1|2|4);
+
+%SetCode(t,Int8ArrayConstructor);
+%FunctionSetPrototype(t,new i());
+%InternalSetPrototype(t,B);
+%InternalSetPrototype(t.prototype,B.prototype);
+%AddNamedProperty(t,"BYTES_PER_ELEMENT",1,
+1|2|4);
+%AddNamedProperty(t.prototype,
+"constructor",a.Int8Array,2);
+%AddNamedProperty(t.prototype,
+"BYTES_PER_ELEMENT",1,
+1|2|4);
+
+%SetCode(u,Uint16ArrayConstructor);
+%FunctionSetPrototype(u,new i());
+%InternalSetPrototype(u,B);
+%InternalSetPrototype(u.prototype,B.prototype);
+%AddNamedProperty(u,"BYTES_PER_ELEMENT",2,
+1|2|4);
+%AddNamedProperty(u.prototype,
+"constructor",a.Uint16Array,2);
+%AddNamedProperty(u.prototype,
+"BYTES_PER_ELEMENT",2,
+1|2|4);
+
+%SetCode(v,Int16ArrayConstructor);
+%FunctionSetPrototype(v,new i());
+%InternalSetPrototype(v,B);
+%InternalSetPrototype(v.prototype,B.prototype);
+%AddNamedProperty(v,"BYTES_PER_ELEMENT",2,
+1|2|4);
+%AddNamedProperty(v.prototype,
+"constructor",a.Int16Array,2);
+%AddNamedProperty(v.prototype,
+"BYTES_PER_ELEMENT",2,
+1|2|4);
+
+%SetCode(w,Uint32ArrayConstructor);
+%FunctionSetPrototype(w,new i());
+%InternalSetPrototype(w,B);
+%InternalSetPrototype(w.prototype,B.prototype);
+%AddNamedProperty(w,"BYTES_PER_ELEMENT",4,
+1|2|4);
+%AddNamedProperty(w.prototype,
+"constructor",a.Uint32Array,2);
+%AddNamedProperty(w.prototype,
+"BYTES_PER_ELEMENT",4,
+1|2|4);
+
+%SetCode(x,Int32ArrayConstructor);
+%FunctionSetPrototype(x,new i());
+%InternalSetPrototype(x,B);
+%InternalSetPrototype(x.prototype,B.prototype);
+%AddNamedProperty(x,"BYTES_PER_ELEMENT",4,
+1|2|4);
+%AddNamedProperty(x.prototype,
+"constructor",a.Int32Array,2);
+%AddNamedProperty(x.prototype,
+"BYTES_PER_ELEMENT",4,
+1|2|4);
+
+%SetCode(y,Float32ArrayConstructor);
+%FunctionSetPrototype(y,new i());
+%InternalSetPrototype(y,B);
+%InternalSetPrototype(y.prototype,B.prototype);
+%AddNamedProperty(y,"BYTES_PER_ELEMENT",4,
+1|2|4);
+%AddNamedProperty(y.prototype,
+"constructor",a.Float32Array,2);
+%AddNamedProperty(y.prototype,
+"BYTES_PER_ELEMENT",4,
+1|2|4);
+
+%SetCode(z,Float64ArrayConstructor);
+%FunctionSetPrototype(z,new i());
+%InternalSetPrototype(z,B);
+%InternalSetPrototype(z.prototype,B.prototype);
+%AddNamedProperty(z,"BYTES_PER_ELEMENT",8,
+1|2|4);
+%AddNamedProperty(z.prototype,
+"constructor",a.Float64Array,2);
+%AddNamedProperty(z.prototype,
+"BYTES_PER_ELEMENT",8,
+1|2|4);
+
+%SetCode(A,Uint8ClampedArrayConstructor);
+%FunctionSetPrototype(A,new i());
+%InternalSetPrototype(A,B);
+%InternalSetPrototype(A.prototype,B.prototype);
+%AddNamedProperty(A,"BYTES_PER_ELEMENT",1,
+1|2|4);
+%AddNamedProperty(A.prototype,
+"constructor",a.Uint8ClampedArray,2);
+%AddNamedProperty(A.prototype,
+"BYTES_PER_ELEMENT",1,
+1|2|4);
+
+
+})
+
+<weak-collectionI
+(function(a,b){
+"use strict";
+%CheckIsBootstrapping();
+var c=a.WeakMap;
+var d=a.WeakSet;
+var e=a.Math.random;
+function WeakMapConstructor(f){
+if((new.target===(void 0))){
+throw %make_type_error(30,"WeakMap");
+}
+%WeakCollectionInitialize(this);
+if(!(f==null)){
+var g=this.set;
+if(!(typeof(g)==='function')){
+throw %make_type_error(94,g,'set',this);
+}
+for(var h of f){
+if(!(%_IsJSReceiver(h))){
+throw %make_type_error(55,h);
+}
+%_Call(g,this,h[0],h[1]);
+}
+}
+}
+%DefineMethodsInternal(c.prototype,class{
+set(key,value){
+if(!(%_IsJSWeakMap(this))){
+throw %make_type_error(49,
+'WeakMap.prototype.set',this);
+}
+if(!(%_IsJSReceiver(key)))throw %make_type_error(170);
+return %WeakCollectionSet(this,key,value,%GenericHash(key));
+}
+delete(key){
+if(!(%_IsJSWeakMap(this))){
+throw %make_type_error(49,
+'WeakMap.prototype.delete',this);
+}
+if(!(%_IsJSReceiver(key)))return false;
+var i=%GetExistingHash(key);
+if((i===(void 0)))return false;
+return %WeakCollectionDelete(this,key,i);
+}
+},-1);
+%SetCode(c,WeakMapConstructor);
+%FunctionSetLength(c,0);
+function WeakSetConstructor(f){
+if((new.target===(void 0))){
+throw %make_type_error(30,"WeakSet");
+}
+%WeakCollectionInitialize(this);
+if(!(f==null)){
+var g=this.add;
+if(!(typeof(g)==='function')){
+throw %make_type_error(94,g,'add',this);
+}
+for(var j of f){
+%_Call(g,this,j);
+}
+}
+}
+%DefineMethodsInternal(d.prototype,class{
+add(j){
+if(!(%_IsJSWeakSet(this))){
+throw %make_type_error(49,
+'WeakSet.prototype.add',this);
+}
+if(!(%_IsJSReceiver(j)))throw %make_type_error(171);
+return %WeakCollectionSet(this,j,true,%GenericHash(j));
+}
+delete(j){
+if(!(%_IsJSWeakSet(this))){
+throw %make_type_error(49,
+'WeakSet.prototype.delete',this);
+}
+if(!(%_IsJSReceiver(j)))return false;
+var i=%GetExistingHash(j);
+if((i===(void 0)))return false;
+return %WeakCollectionDelete(this,j,i);
+}
+},-1);
+%SetCode(d,WeakSetConstructor);
+%FunctionSetLength(d,0);
+})
+
+ messages}
+(function(a,b){
+"use strict";
+%CheckIsBootstrapping();
+var c=b.ImportNow("Script");
+function ScriptLocationFromPosition(position,
+include_resource_offset){
+return %ScriptPositionInfo(this,position,!!include_resource_offset);
+}
+function ScriptNameOrSourceURL(){
+if(this.source_url)return this.source_url;
+return this.name;
+}
+b.SetUpLockedPrototype(c,[
+"source",
+"name",
+"source_url",
+"source_mapping_url",
+"line_offset",
+"column_offset"
+],[
+"locationFromPosition",ScriptLocationFromPosition,
+"nameOrSourceURL",ScriptNameOrSourceURL,
+]
+);
+});
+
+$templates
+(function(a,b){
+"use strict";
+%CheckIsBootstrapping();
+var c=a.Map;
+var d=b.InternalArray;
+var e=new c;
+var f=c.prototype.get;
+var g=c.prototype.set;
+function SameCallSiteElements(h,i){
+var j=h.length;
+var i=i.raw;
+if(j!==i.length)return false;
+for(var k=0;k<j;++k){
+if(h[k]!==i[k])return false;
+}
+return true;
+}
+function GetCachedCallSite(l,m){
+var n=%_Call(f,e,m);
+if((n===(void 0)))return;
+var j=n.length;
+for(var k=0;k<j;++k){
+if(SameCallSiteElements(l,n[k]))return n[k];
+}
+}
+function SetCachedCallSite(l,m){
+var n=%_Call(f,e,m);
+var o;
+if((n===(void 0))){
+o=new d(1);
+o[0]=l;
+%_Call(g,e,m,o);
+}else{
+n.push(l);
+}
+return l;
+}
+function GetTemplateCallSite(l,h,m){
+var p=GetCachedCallSite(h,m);
+if(!(p===(void 0)))return p;
+%AddNamedProperty(l,"raw",%object_freeze(h),
+1|2|4);
+return SetCachedCallSite(%object_freeze(l),m);
+}
+%InstallToContext(["get_template_call_site",GetTemplateCallSite]);
+})
+
+spread5
+(function(a,b){
+"use strict";
+var c=b.InternalArray;
+function SpreadArguments(){
+var d=arguments.length;
+var e=new c();
+for(var f=0;f<d;++f){
+var g=arguments[f];
+var h=g.length;
+for(var i=0;i<h;++i){
+e.push(g[i]);
+}
+}
+return e;
+}
+function SpreadIterable(j){
+if((j==null)){
+throw %make_type_error(76,j);
+}
+var e=new c();
+for(var k of j){
+e.push(k);
+}
+return e;
+}
+%InstallToContext([
+"spread_arguments",SpreadArguments,
+"spread_iterable",SpreadIterable,
+]);
+})
+
+proxya
+(function(a,b){
+"use strict";
+%CheckIsBootstrapping();
+var c=a.Proxy;
+%DefineMethodsInternal(c,class{revocable(target,handler){
+var d=new c(target,handler);
+return{proxy:d,revoke:()=>%JSProxyRevoke(d)};
+}},-1);
+})
+
+intl^ó
+(function(a,b){
+"use strict";
+%CheckIsBootstrapping();
+var c;
+var d;
+var e=a.Date;
+var f=a.Intl;
+var g=f.DateTimeFormat;
+var h=f.NumberFormat;
+var i=f.Collator;
+var j=b.ImportNow("PluralRules");
+var k=f.v8BreakIterator;
+var l=a.Number;
+var m=a.RegExp;
+var n=a.String;
+var o=b.ImportNow("intl_fallback_symbol");
+var p=b.InternalArray;
+var q=a.Object.prototype.hasOwnProperty;
+var r=a.Object.keys;
+var s=b.ImportNow("intl_pattern_symbol");
+var t=b.ImportNow("intl_resolved_symbol");
+var u=n.prototype.substr;
+var v=n.prototype.substring;
+b.Import(function(w){
+c=w.ArrayJoin;
+d=w.ArrayPush;
+});
+function AddBoundMethod(obj,methodName,implementation,length,typename,
+compat){
+%CheckIsBootstrapping();
+var x=%CreatePrivateSymbol(methodName);
+%DefineMethodsInternal(obj.prototype,class{get[methodName](){
+var y=Unwrap(this,typename,obj,methodName,compat);
+if((y[x]===(void 0))){
+var z;
+if((length===(void 0))||length===2){
+z=
+(0,((fst,snd)=>implementation(y,fst,snd)));
+}else if(length===1){
+z=(0,(fst=>implementation(y,fst)));
+}else{
+z=(0,((...args)=>{
+if(args.length>0){
+return implementation(y,args[0]);
+}else{
+return implementation(y);
+}
+}));
+}
+%SetNativeFlag(z);
+y[x]=z;
+}
+return y[x];
+}},-1);
+}
+function IntlConstruct(y,constructor,create,newTarget,args,
+compat){
+var A=args[0];
+var B=args[1];
+var C=create(A,B);
+if(compat&&(newTarget===(void 0))&&y instanceof constructor){
+%object_define_property(y,o,{value:C});
+return y;
+}
+return C;
+}
+function Unwrap(y,D,E,F,G){
+if(!%IsInitializedIntlObjectOfType(y,D)){
+if(G&&y instanceof E){
+let fallback=y[o];
+if(%IsInitializedIntlObjectOfType(fallback,D)){
+return fallback;
+}
+}
+throw %make_type_error(49,F,y);
+}
+return y;
+}
+var H={
+'collator':(void 0),
+'numberformat':(void 0),
+'dateformat':(void 0),
+'breakiterator':(void 0),
+'pluralrules':(void 0),
+};
+var I=(void 0);
+function GetDefaultICULocaleJS(J){
+if((I===(void 0))){
+I=%GetDefaultICULocale();
+}
+return((J===(void 0))||
+(%_Call(q,getAvailableLocalesOf(J),I)))
+?I:"und";
+}
+var K=(void 0);
+function GetUnicodeExtensionRE(){
+if(((void 0)===(void 0))){
+K=new m('-u(-[a-z0-9]{2,8})+','g');
+}
+return K;
+}
+var L=(void 0);
+function GetAnyExtensionRE(){
+if((L===(void 0))){
+L=new m('-[a-z0-9]{1}-.*','g');
+}
+return L;
+}
+var M=(void 0);
+function GetQuotedStringRE(){
+if((M===(void 0))){
+M=new m("'[^']+'",'g');
+}
+return M;
+}
+var N=(void 0);
+function GetServiceRE(){
+if((N===(void 0))){
+N=
+new m('^('+%_Call(c,r(H),'|')+')$');
+}
+return N;
+}
+var O=(void 0);
+function GetLanguageTagRE(){
+if((O===(void 0))){
+BuildLanguageTagREs();
+}
+return O;
+}
+var P=(void 0);
+function GetLanguageVariantRE(){
+if((P===(void 0))){
+BuildLanguageTagREs();
+}
+return P;
+}
+var Q=(void 0);
+function GetLanguageSingletonRE(){
+if((Q===(void 0))){
+BuildLanguageTagREs();
+}
+return Q;
+}
+var R=(void 0);
+function GetTimezoneNameCheckRE(){
+if((R===(void 0))){
+R=new m(
+'^([A-Za-z]+)/([A-Za-z_-]+)((?:\/[A-Za-z_-]+)+)*$');
+}
+return R;
+}
+var S=(void 0);
+function GetTimezoneNameLocationPartRE(){
+if((S===(void 0))){
+S=
+new m('^([A-Za-z]+)((?:[_-][A-Za-z]+)+)*$');
+}
+return S;
+}
+function supportedLocalesOf(J,A,B){
+if((%regexp_internal_match(GetServiceRE(),J)===null)){
+throw %make_error(7,J);
+}
+if((B===(void 0))){
+B={};
+}else{
+B=(%_ToObject(B));
+}
+var T=B.localeMatcher;
+if(!(T===(void 0))){
+T=(%_ToString(T));
+if(T!=='lookup'&&T!=='best fit'){
+throw %make_range_error(178,T);
+}
+}else{
+T='best fit';
+}
+var U=initializeLocaleList(A);
+var V=getAvailableLocalesOf(J);
+if(T==='best fit'){
+return initializeLocaleList(bestFitSupportedLocalesOf(
+U,V));
+}
+return initializeLocaleList(lookupSupportedLocalesOf(
+U,V));
+}
+function lookupSupportedLocalesOf(U,V){
+var W=new p();
+for(var X=0;X<U.length;++X){
+var Y=%RegExpInternalReplace(
+GetUnicodeExtensionRE(),U[X],'');
+do{
+if(!(V[Y]===(void 0))){
+%_Call(d,W,U[X]);
+break;
+}
+var Z=%StringLastIndexOf(Y,'-');
+if(Z===-1){
+break;
+}
+Y=%_Call(v,Y,0,Z);
+}while(true);
+}
+return W;
+}
+function bestFitSupportedLocalesOf(U,V){
+return lookupSupportedLocalesOf(U,V);
+}
+function getGetOption(B,aa){
+if((B===(void 0)))throw %make_error(4,aa);
+var ab=function getOption(ac,ad,ae,af){
+if(!(B[ac]===(void 0))){
+var ag=B[ac];
+switch(ad){
+case'boolean':
+ag=(!!(ag));
+break;
+case'string':
+ag=(%_ToString(ag));
+break;
+case'number':
+ag=(%_ToNumber(ag));
+break;
+default:
+throw %make_error(8);
+}
+if(!(ae===(void 0))&&%ArrayIndexOf(ae,ag,0)===-1){
+throw %make_range_error(188,ag,aa,ac);
+}
+return ag;
+}
+return af;
+}
+return ab;
+}
+function resolveLocale(J,U,B){
+U=initializeLocaleList(U);
+var ab=getGetOption(B,J);
+var T=ab('localeMatcher','string',
+['lookup','best fit'],'best fit');
+var ah;
+if(T==='lookup'){
+ah=lookupMatcher(J,U);
+}else{
+ah=bestFitMatcher(J,U);
+}
+return ah;
+}
+function lookupMatcher(J,U){
+if((%regexp_internal_match(GetServiceRE(),J)===null)){
+throw %make_error(7,J);
+}
+var V=getAvailableLocalesOf(J);
+for(var X=0;X<U.length;++X){
+var Y=%RegExpInternalReplace(
+GetAnyExtensionRE(),U[X],'');
+do{
+if(!(V[Y]===(void 0))){
+var ai=%regexp_internal_match(
+GetUnicodeExtensionRE(),U[X]);
+var aj=(ai===null)?'':ai[0];
+return{locale:Y,extension:aj,position:X};
+}
+var Z=%StringLastIndexOf(Y,'-');
+if(Z===-1){
+break;
+}
+Y=%_Call(v,Y,0,Z);
+}while(true);
+}
+return{
+locale:GetDefaultICULocaleJS(J),
+extension:'',
+position:-1
+};
+}
+function bestFitMatcher(J,U){
+return lookupMatcher(J,U);
+}
+function parseExtension(aj){
+var ak=%StringSplit(aj,'-',4294967295);
+if(ak.length<=2||
+(ak[0]!==''&&ak[1]!=='u')){
+return{};
+}
+var al={};
+var am=(void 0);
+var ag=(void 0);
+for(var X=2;X<ak.length;++X){
+var an=ak[X].length;
+var ao=ak[X];
+if(an===2){
+if(!(am===(void 0))){
+if(!(am in al)){
+al[am]=ag;
+}
+ag=(void 0);
+}
+am=ao;
+}else if(an>=3&&an<=8&&!(am===(void 0))){
+if((ag===(void 0))){
+ag=ao;
+}else{
+ag=ag+"-"+ao;
+}
+}else{
+return{};
+}
+}
+if(!(am===(void 0))&&!(am in al)){
+al[am]=ag;
+}
+return al;
+}
+function setOptions(ap,al,aq,ab,ar){
+var aj='';
+var as=function updateExtension(am,ag){
+return'-'+am+'-'+(%_ToString(ag));
+}
+var at=function updateProperty(ac,ad,ag){
+if(ad==='boolean'&&(typeof ag==='string')){
+ag=(ag==='true')?true:false;
+}
+if(!(ac===(void 0))){
+defineWEProperty(ar,ac,ag);
+}
+}
+for(var am in aq){
+if((%_Call(q,aq,am))){
+var ag=(void 0);
+var au=aq[am];
+if(!(au.property===(void 0))){
+ag=ab(au.property,au.type,au.values);
+}
+if(!(ag===(void 0))){
+at(au.property,au.type,ag);
+aj+=as(am,ag);
+continue;
+}
+if((%_Call(q,al,am))){
+ag=al[am];
+if(!(ag===(void 0))){
+at(au.property,au.type,ag);
+aj+=as(am,ag);
+}else if(au.type==='boolean'){
+at(au.property,au.type,true);
+aj+=as(am,true);
+}
+}
+}
+}
+return aj===''?'':'-u'+aj;
+}
+function freezeArray(av){
+var aw=[];
+var ax=av.length;
+for(var X=0;X<ax;X++){
+if(X in av){
+%object_define_property(aw,X,{value:av[X],
+configurable:false,
+writable:false,
+enumerable:true});
+}
+}
+%object_define_property(aw,'length',{value:ax,writable:false});
+return aw;
+}
+function makeArray(av){
+var aw=[];
+%MoveArrayContents(av,aw);
+return aw;
+}
+function getAvailableLocalesOf(J){
+if(!(H[J]===(void 0))){
+return H[J];
+}
+var ay=%AvailableLocalesOf(J);
+for(var X in ay){
+if((%_Call(q,ay,X))){
+var az=%regexp_internal_match(
+/^([a-z]{2,3})-([A-Z][a-z]{3})-([A-Z]{2})$/,X);
+if(!(az===null)){
+ay[az[1]+'-'+az[3]]=null;
+}
+}
+}
+H[J]=ay;
+return ay;
+}
+function defineWEProperty(aA,ac,ag){
+%object_define_property(aA,ac,
+{value:ag,writable:true,enumerable:true});
+}
+function addWEPropertyIfDefined(aA,ac,ag){
+if(!(ag===(void 0))){
+defineWEProperty(aA,ac,ag);
+}
+}
+function defineWECProperty(aA,ac,ag){
+%object_define_property(aA,ac,{value:ag,
+writable:true,
+enumerable:true,
+configurable:true});
+}
+function addWECPropertyIfDefined(aA,ac,ag){
+if(!(ag===(void 0))){
+defineWECProperty(aA,ac,ag);
+}
+}
+function toTitleCaseWord(aB){
+return %StringToUpperCaseIntl(%_Call(u,aB,0,1))+
+%StringToLowerCaseIntl(%_Call(u,aB,1));
+}
+function toTitleCaseTimezoneLocation(aC){
+var aD=%regexp_internal_match(GetTimezoneNameLocationPartRE(),aC)
+if((aD===null))throw %make_range_error(157,aC);
+var aE=toTitleCaseWord(aD[1]);
+if(!(aD[2]===(void 0))&&2<aD.length){
+var aF=%_Call(v,aD[2],0,1);
+var az=%StringSplit(aD[2],aF,4294967295);
+for(var X=1;X<az.length;X++){
+var aG=az[X]
+var aH=%StringToLowerCaseIntl(aG);
+aE=aE+aF+
+((aH!=='es'&&
+aH!=='of'&&aH!=='au')?
+toTitleCaseWord(aG):aH);
+}
+}
+return aE;
+}
+function canonicalizeLanguageTag(aI){
+if((!(typeof(aI)==='string')&&!(%_IsJSReceiver(aI)))||
+(aI===null)){
+throw %make_type_error(56);
+}
+if((typeof(aI)==='string')&&
+!(%regexp_internal_match(/^[a-z]{2,3}$/,aI)===null)){
+return aI;
+}
+var aJ=(%_ToString(aI));
+if(isStructuallyValidLanguageTag(aJ)===false){
+throw %make_range_error(169,aJ);
+}
+var aK=%CanonicalizeLanguageTag(aJ);
+if(aK==='invalid-tag'){
+throw %make_range_error(169,aJ);
+}
+return aK;
+}
+function canonicalizeLocaleList(A){
+var aL=new p();
+if(!(A===(void 0))){
+if(typeof A==='string'){
+%_Call(d,aL,canonicalizeLanguageTag(A));
+return aL;
+}
+var aM=(%_ToObject(A));
+var aN=(%_ToLength(aM.length));
+for(var aO=0;aO<aN;aO++){
+if(aO in aM){
+var ag=aM[aO];
+var aK=canonicalizeLanguageTag(ag);
+if(%ArrayIndexOf(aL,aK,0)===-1){
+%_Call(d,aL,aK);
+}
+}
+}
+}
+return aL;
+}
+function initializeLocaleList(A){
+return freezeArray(canonicalizeLocaleList(A));
+}
+function isStructuallyValidLanguageTag(Y){
+if((%regexp_internal_match(GetLanguageTagRE(),Y)===null)){
+return false;
+}
+Y=%StringToLowerCaseIntl(Y);
+if(%StringIndexOf(Y,'x-',0)===0){
+return true;
+}
+Y=%StringSplit(Y,'-x-',4294967295)[0];
+var aP=new p();
+var aQ=new p();
+var az=%StringSplit(Y,'-',4294967295);
+for(var X=1;X<az.length;X++){
+var ag=az[X];
+if(!(%regexp_internal_match(GetLanguageVariantRE(),ag)===null)&&
+aQ.length===0){
+if(%ArrayIndexOf(aP,ag,0)===-1){
+%_Call(d,aP,ag);
+}else{
+return false;
+}
+}
+if(!(%regexp_internal_match(GetLanguageSingletonRE(),ag)===null)){
+if(%ArrayIndexOf(aQ,ag,0)===-1){
+%_Call(d,aQ,ag);
+}else{
+return false;
+}
+}
+}
+return true;
+}
+function BuildLanguageTagREs(){
+var aR='[a-zA-Z]';
+var aS='[0-9]';
+var aT='('+aR+'|'+aS+')';
+var aU='(art-lojban|cel-gaulish|no-bok|no-nyn|zh-guoyu|zh-hakka|'+
+'zh-min|zh-min-nan|zh-xiang)';
+var aV='(en-GB-oed|i-ami|i-bnn|i-default|i-enochian|i-hak|'+
+'i-klingon|i-lux|i-mingo|i-navajo|i-pwn|i-tao|i-tay|'+
+'i-tsu|sgn-BE-FR|sgn-BE-NL|sgn-CH-DE)';
+var aW='('+aV+'|'+aU+')';
+var aX='(x(-'+aT+'{1,8})+)';
+var aY='('+aS+'|[A-WY-Za-wy-z])';
+Q=new m('^'+aY+'$','i');
+var aj='('+aY+'(-'+aT+'{2,8})+)';
+var aZ='('+aT+'{5,8}|('+aS+aT+'{3}))';
+P=new m('^'+aZ+'$','i');
+var ba='('+aR+'{2}|'+aS+'{3})';
+var bb='('+aR+'{4})';
+var bc='('+aR+'{3}(-'+aR+'{3}){0,2})';
+var bd='('+aR+'{2,3}(-'+bc+')?|'+aR+'{4}|'+
+aR+'{5,8})';
+var be=bd+'(-'+bb+')?(-'+ba+')?(-'+
+aZ+')*(-'+aj+')*(-'+aX+')?';
+var bf=
+'^('+be+'|'+aX+'|'+aW+')$';
+O=new m(bf,'i');
+}
+%DefineMethodsInternal(f,class{getCanonicalLocales(A){
+return makeArray(canonicalizeLocaleList(A));
+}},-1);
+function CreateCollator(A,B){
+if((B===(void 0))){
+B={};
+}
+var ab=getGetOption(B,'collator');
+var bg={};
+defineWEProperty(bg,'usage',ab(
+'usage','string',['sort','search'],'sort'));
+var bh=ab('sensitivity','string',
+['base','accent','case','variant']);
+if((bh===(void 0))&&bg.usage==='sort'){
+bh='variant';
+}
+defineWEProperty(bg,'sensitivity',bh);
+defineWEProperty(bg,'ignorePunctuation',ab(
+'ignorePunctuation','boolean',(void 0),false));
+var Y=resolveLocale('collator',A,B);
+var al=parseExtension(Y.extension);
+var bi={
+'kn':{'property':'numeric','type':'boolean'},
+'kf':{'property':'caseFirst','type':'string',
+'values':['false','lower','upper']}
+};
+setOptions(
+B,al,bi,ab,bg);
+var bj='default';
+var aj='';
+if((%_Call(q,al,'co'))&&bg.usage==='sort'){
+var bk=[
+'big5han','dict','direct','ducet','gb2312','phonebk','phonetic',
+'pinyin','reformed','searchjl','stroke','trad','unihan','zhuyin'
+];
+if(%ArrayIndexOf(bk,al.co,0)!==-1){
+aj='-u-co-'+al.co;
+bj=al.co;
+}
+}else if(bg.usage==='search'){
+aj='-u-co-search';
+}
+defineWEProperty(bg,'collation',bj);
+var bl=Y.locale+aj;
+var ah=%object_define_properties({},{
+caseFirst:{writable:true},
+collation:{value:bg.collation,writable:true},
+ignorePunctuation:{writable:true},
+locale:{writable:true},
+numeric:{writable:true},
+requestedLocale:{value:bl,writable:true},
+sensitivity:{writable:true},
+strength:{writable:true},
+usage:{value:bg.usage,writable:true}
+});
+var bm=%CreateCollator(bl,bg,ah);
+%MarkAsInitializedIntlObjectOfType(bm,'collator');
+bm[t]=ah;
+return bm;
+}
+function CollatorConstructor(){
+return IntlConstruct(this,i,CreateCollator,new.target,
+arguments);
+}
+%SetCode(i,CollatorConstructor);
+%DefineMethodsInternal(i.prototype,class{resolvedOptions(){
+var bn=Unwrap(this,'collator',i,'resolvedOptions',
+false);
+return{
+locale:bn[t].locale,
+usage:bn[t].usage,
+sensitivity:bn[t].sensitivity,
+ignorePunctuation:bn[t].ignorePunctuation,
+numeric:bn[t].numeric,
+caseFirst:bn[t].caseFirst,
+collation:bn[t].collation
+};
+}},-1);
+%DefineMethodsInternal(i,class{supportedLocalesOf(A){
+return supportedLocalesOf('collator',A,arguments[1]);
+}},-1);
+function compare(bm,bo,bp){
+return %InternalCompare(bm,(%_ToString(bo)),(%_ToString(bp)));
+};
+AddBoundMethod(i,'compare',compare,2,'collator',false);
+function PluralRulesConstructor(){
+if((new.target===(void 0))){
+throw %make_type_error(30,"PluralRules");
+}
+var A=arguments[0];
+var B=arguments[1];
+if((B===(void 0))){
+B={};
+}
+var ab=getGetOption(B,'pluralrules');
+var Y=resolveLocale('pluralrules',A,B);
+var bg={};
+defineWEProperty(bg,'type',ab(
+'type','string',['cardinal','ordinal'],'cardinal'));
+SetNumberFormatDigitOptions(bg,B,0,3);
+var bl=Y.locale;
+var ah=%object_define_properties({},{
+type:{value:bg.type,writable:true},
+locale:{writable:true},
+maximumFractionDigits:{writable:true},
+minimumFractionDigits:{writable:true},
+minimumIntegerDigits:{writable:true},
+requestedLocale:{value:bl,writable:true},
+});
+if((%_Call(q,bg,'minimumSignificantDigits'))){
+defineWEProperty(ah,'minimumSignificantDigits',(void 0));
+}
+if((%_Call(q,bg,'maximumSignificantDigits'))){
+defineWEProperty(ah,'maximumSignificantDigits',(void 0));
+}
+defineWEProperty(ah,'pluralCategories',[]);
+var bq=%CreatePluralRules(bl,bg,
+ah);
+%MarkAsInitializedIntlObjectOfType(bq,'pluralrules');
+bq[t]=ah;
+return bq;
+}
+%SetCode(j,PluralRulesConstructor);
+%DefineMethodsInternal(j.prototype,class{resolvedOptions(){
+if(!%IsInitializedIntlObjectOfType(this,'pluralrules')){
+throw %make_type_error(49,
+'Intl.PluralRules.prototype.resolvedOptions',
+this);
+}
+var aE={
+locale:this[t].locale,
+type:this[t].type,
+minimumIntegerDigits:this[t].minimumIntegerDigits,
+minimumFractionDigits:this[t].minimumFractionDigits,
+maximumFractionDigits:this[t].maximumFractionDigits,
+};
+if((%_Call(q,this[t],'minimumSignificantDigits'))){
+defineWECProperty(aE,'minimumSignificantDigits',
+this[t].minimumSignificantDigits);
+}
+if((%_Call(q,this[t],'maximumSignificantDigits'))){
+defineWECProperty(aE,'maximumSignificantDigits',
+this[t].maximumSignificantDigits);
+}
+defineWECProperty(aE,'pluralCategories',
+this[t].pluralCategories);
+return aE;
+}},-1);
+%DefineMethodsInternal(j,class{supportedLocalesOf(A){
+return supportedLocalesOf('pluralrules',A,arguments[1]);
+}},-1);
+%DefineMethodsInternal(j.prototype,class{select(ag){
+if(!%IsInitializedIntlObjectOfType(this,'pluralrules')){
+throw %make_type_error(49,
+'Intl.PluralRules.prototype.select',
+this);
+}
+return %PluralRulesSelect(this,(%_ToNumber(ag))+0);
+}},-1);
+function isWellFormedCurrencyCode(br){
+return typeof br==="string"&&br.length===3&&
+(%regexp_internal_match(/[^A-Za-z]/,br)===null);
+}
+function defaultNumberOption(ag,bs,bt,bu,ac){
+if(!(ag===(void 0))){
+ag=(%_ToNumber(ag));
+if((%IS_VAR(ag)!==ag)||ag<bs||ag>bt){
+throw %make_range_error(181,ac);
+}
+return %math_floor(ag);
+}
+return bu;
+}
+function getNumberOption(B,ac,bs,bt,bu){
+var ag=B[ac];
+return defaultNumberOption(ag,bs,bt,bu,ac);
+}
+function SetNumberFormatDigitOptions(bg,B,
+mnfdDefault,mxfdDefault){
+var bv=getNumberOption(B,'minimumIntegerDigits',1,21,1);
+defineWEProperty(bg,'minimumIntegerDigits',bv);
+var bw=getNumberOption(B,'minimumFractionDigits',0,20,
+mnfdDefault);
+defineWEProperty(bg,'minimumFractionDigits',bw);
+var bx=((bw)>(mxfdDefault)?(bw):(mxfdDefault));
+var by=getNumberOption(B,'maximumFractionDigits',bw,20,
+bx);
+defineWEProperty(bg,'maximumFractionDigits',by);
+var bz=B['minimumSignificantDigits'];
+var bA=B['maximumSignificantDigits'];
+if(!(bz===(void 0))||!(bA===(void 0))){
+bz=defaultNumberOption(bz,1,21,1,'minimumSignificantDigits');
+defineWEProperty(bg,'minimumSignificantDigits',bz);
+bA=defaultNumberOption(bA,bz,21,21,'maximumSignificantDigits');
+defineWEProperty(bg,'maximumSignificantDigits',bA);
+}
+}
+function CreateNumberFormat(A,B){
+if((B===(void 0))){
+B={};
+}
+var ab=getGetOption(B,'numberformat');
+var Y=resolveLocale('numberformat',A,B);
+var bg={};
+defineWEProperty(bg,'style',ab(
+'style','string',['decimal','percent','currency'],'decimal'));
+var br=ab('currency','string');
+if(!(br===(void 0))&&!isWellFormedCurrencyCode(br)){
+throw %make_range_error(164,br);
+}
+if(bg.style==='currency'&&(br===(void 0))){
+throw %make_type_error(32);
+}
+var bB,bC;
+var bD=ab(
+'currencyDisplay','string',['code','symbol','name'],'symbol');
+if(bg.style==='currency'){
+defineWEProperty(bg,'currency',%StringToUpperCaseIntl(br));
+defineWEProperty(bg,'currencyDisplay',bD);
+bB=bC=%CurrencyDigits(bg.currency);
+}else{
+bB=0;
+bC=bg.style==='percent'?0:3;
+}
+SetNumberFormatDigitOptions(bg,B,bB,
+bC);
+defineWEProperty(bg,'useGrouping',ab(
+'useGrouping','boolean',(void 0),true));
+var al=parseExtension(Y.extension);
+var bE={
+'nu':{'property':(void 0),'type':'string'}
+};
+var aj=setOptions(B,al,bE,
+ab,bg);
+var bl=Y.locale+aj;
+var ah=%object_define_properties({},{
+currency:{writable:true},
+currencyDisplay:{writable:true},
+locale:{writable:true},
+maximumFractionDigits:{writable:true},
+minimumFractionDigits:{writable:true},
+minimumIntegerDigits:{writable:true},
+numberingSystem:{writable:true},
+requestedLocale:{value:bl,writable:true},
+style:{value:bg.style,writable:true},
+useGrouping:{writable:true}
+});
+if((%_Call(q,bg,'minimumSignificantDigits'))){
+defineWEProperty(ah,'minimumSignificantDigits',(void 0));
+}
+if((%_Call(q,bg,'maximumSignificantDigits'))){
+defineWEProperty(ah,'maximumSignificantDigits',(void 0));
+}
+var bF=%CreateNumberFormat(bl,bg,
+ah);
+if(bg.style==='currency'){
+%object_define_property(ah,'currencyDisplay',
+{value:bD,writable:true});
+}
+%MarkAsInitializedIntlObjectOfType(bF,'numberformat');
+bF[t]=ah;
+return bF;
+}
+function NumberFormatConstructor(){
+return IntlConstruct(this,h,CreateNumberFormat,
+new.target,arguments,true);
+}
+%SetCode(h,NumberFormatConstructor);
+%DefineMethodsInternal(h.prototype,class{resolvedOptions(){
+var bG=Unwrap(this,'numberformat',h,
+'resolvedOptions',true);
+var aE={
+locale:bG[t].locale,
+numberingSystem:bG[t].numberingSystem,
+style:bG[t].style,
+useGrouping:bG[t].useGrouping,
+minimumIntegerDigits:bG[t].minimumIntegerDigits,
+minimumFractionDigits:bG[t].minimumFractionDigits,
+maximumFractionDigits:bG[t].maximumFractionDigits,
+};
+if(aE.style==='currency'){
+defineWECProperty(aE,'currency',bG[t].currency);
+defineWECProperty(aE,'currencyDisplay',
+bG[t].currencyDisplay);
+}
+if((%_Call(q,bG[t],'minimumSignificantDigits'))){
+defineWECProperty(aE,'minimumSignificantDigits',
+bG[t].minimumSignificantDigits);
+}
+if((%_Call(q,bG[t],'maximumSignificantDigits'))){
+defineWECProperty(aE,'maximumSignificantDigits',
+bG[t].maximumSignificantDigits);
+}
+return aE;
+}},-1);
+%DefineMethodsInternal(h,class{supportedLocalesOf(A){
+return supportedLocalesOf('numberformat',A,arguments[1]);
+}},-1);
+function formatNumber(bH,ag){
+var bI=(%_ToNumber(ag))+0;
+return %InternalNumberFormat(bH,bI);
+}
+AddBoundMethod(h,'format',formatNumber,1,
+'numberformat',true);
+function toLDMLString(B){
+var ab=getGetOption(B,'dateformat');
+var bJ='';
+var bK=ab('weekday','string',['narrow','short','long']);
+bJ+=appendToLDMLString(
+bK,{narrow:'EEEEE',short:'EEE',long:'EEEE'});
+bK=ab('era','string',['narrow','short','long']);
+bJ+=appendToLDMLString(
+bK,{narrow:'GGGGG',short:'GGG',long:'GGGG'});
+bK=ab('year','string',['2-digit','numeric']);
+bJ+=appendToLDMLString(bK,{'2-digit':'yy','numeric':'y'});
+bK=ab('month','string',
+['2-digit','numeric','narrow','short','long']);
+bJ+=appendToLDMLString(bK,{'2-digit':'MM','numeric':'M',
+'narrow':'MMMMM','short':'MMM','long':'MMMM'});
+bK=ab('day','string',['2-digit','numeric']);
+bJ+=appendToLDMLString(
+bK,{'2-digit':'dd','numeric':'d'});
+var bL=ab('hour12','boolean');
+bK=ab('hour','string',['2-digit','numeric']);
+if((bL===(void 0))){
+bJ+=appendToLDMLString(bK,{'2-digit':'jj','numeric':'j'});
+}else if(bL===true){
+bJ+=appendToLDMLString(bK,{'2-digit':'hh','numeric':'h'});
+}else{
+bJ+=appendToLDMLString(bK,{'2-digit':'HH','numeric':'H'});
+}
+bK=ab('minute','string',['2-digit','numeric']);
+bJ+=appendToLDMLString(bK,{'2-digit':'mm','numeric':'m'});
+bK=ab('second','string',['2-digit','numeric']);
+bJ+=appendToLDMLString(bK,{'2-digit':'ss','numeric':'s'});
+bK=ab('timeZoneName','string',['short','long']);
+bJ+=appendToLDMLString(bK,{short:'z',long:'zzzz'});
+return bJ;
+}
+function appendToLDMLString(bK,bM){
+if(!(bK===(void 0))){
+return bM[bK];
+}else{
+return'';
+}
+}
+function fromLDMLString(bJ){
+bJ=%RegExpInternalReplace(GetQuotedStringRE(),bJ,'');
+var B={};
+var aD=%regexp_internal_match(/E{3,5}/,bJ);
+B=appendToDateTimeObject(
+B,'weekday',aD,{EEEEE:'narrow',EEE:'short',EEEE:'long'});
+aD=%regexp_internal_match(/G{3,5}/,bJ);
+B=appendToDateTimeObject(
+B,'era',aD,{GGGGG:'narrow',GGG:'short',GGGG:'long'});
+aD=%regexp_internal_match(/y{1,2}/,bJ);
+B=appendToDateTimeObject(
+B,'year',aD,{y:'numeric',yy:'2-digit'});
+aD=%regexp_internal_match(/M{1,5}/,bJ);
+B=appendToDateTimeObject(B,'month',aD,{MM:'2-digit',
+M:'numeric',MMMMM:'narrow',MMM:'short',MMMM:'long'});
+aD=%regexp_internal_match(/L{1,5}/,bJ);
+B=appendToDateTimeObject(B,'month',aD,{LL:'2-digit',
+L:'numeric',LLLLL:'narrow',LLL:'short',LLLL:'long'});
+aD=%regexp_internal_match(/d{1,2}/,bJ);
+B=appendToDateTimeObject(
+B,'day',aD,{d:'numeric',dd:'2-digit'});
+aD=%regexp_internal_match(/h{1,2}/,bJ);
+if(aD!==null){
+B['hour12']=true;
+}
+B=appendToDateTimeObject(
+B,'hour',aD,{h:'numeric',hh:'2-digit'});
+aD=%regexp_internal_match(/H{1,2}/,bJ);
+if(aD!==null){
+B['hour12']=false;
+}
+B=appendToDateTimeObject(
+B,'hour',aD,{H:'numeric',HH:'2-digit'});
+aD=%regexp_internal_match(/m{1,2}/,bJ);
+B=appendToDateTimeObject(
+B,'minute',aD,{m:'numeric',mm:'2-digit'});
+aD=%regexp_internal_match(/s{1,2}/,bJ);
+B=appendToDateTimeObject(
+B,'second',aD,{s:'numeric',ss:'2-digit'});
+aD=%regexp_internal_match(/z|zzzz/,bJ);
+B=appendToDateTimeObject(
+B,'timeZoneName',aD,{z:'short',zzzz:'long'});
+return B;
+}
+function appendToDateTimeObject(B,bK,aD,bM){
+if((aD===null)){
+if(!(%_Call(q,B,bK))){
+defineWEProperty(B,bK,(void 0));
+}
+return B;
+}
+var ac=aD[0];
+defineWEProperty(B,bK,bM[ac]);
+return B;
+}
+function toDateTimeOptions(B,bN,bO){
+if((B===(void 0))){
+B={};
+}else{
+B=(%_ToObject(B));
+}
+B=%object_create(B);
+var bP=true;
+if((bN==='date'||bN==='any')&&
+(!(B.weekday===(void 0))||!(B.year===(void 0))||
+!(B.month===(void 0))||!(B.day===(void 0)))){
+bP=false;
+}
+if((bN==='time'||bN==='any')&&
+(!(B.hour===(void 0))||!(B.minute===(void 0))||
+!(B.second===(void 0)))){
+bP=false;
+}
+if(bP&&(bO==='date'||bO==='all')){
+%object_define_property(B,'year',{value:'numeric',
+writable:true,
+enumerable:true,
+configurable:true});
+%object_define_property(B,'month',{value:'numeric',
+writable:true,
+enumerable:true,
+configurable:true});
+%object_define_property(B,'day',{value:'numeric',
+writable:true,
+enumerable:true,
+configurable:true});
+}
+if(bP&&(bO==='time'||bO==='all')){
+%object_define_property(B,'hour',{value:'numeric',
+writable:true,
+enumerable:true,
+configurable:true});
+%object_define_property(B,'minute',{value:'numeric',
+writable:true,
+enumerable:true,
+configurable:true});
+%object_define_property(B,'second',{value:'numeric',
+writable:true,
+enumerable:true,
+configurable:true});
+}
+return B;
+}
+function CreateDateTimeFormat(A,B){
+if((B===(void 0))){
+B={};
+}
+var Y=resolveLocale('dateformat',A,B);
+B=toDateTimeOptions(B,'any','date');
+var ab=getGetOption(B,'dateformat');
+var T=ab('formatMatcher','string',
+['basic','best fit'],'best fit');
+var bJ=toLDMLString(B);
+var bQ=canonicalizeTimeZoneID(B.timeZone);
+var bg={};
+var al=parseExtension(Y.extension);
+var bR={
+'ca':{'property':(void 0),'type':'string'},
+'nu':{'property':(void 0),'type':'string'}
+};
+var aj=setOptions(B,al,bR,
+ab,bg);
+var bl=Y.locale+aj;
+var ah=%object_define_properties({},{
+calendar:{writable:true},
+day:{writable:true},
+era:{writable:true},
+hour12:{writable:true},
+hour:{writable:true},
+locale:{writable:true},
+minute:{writable:true},
+month:{writable:true},
+numberingSystem:{writable:true},
+[s]:{writable:true},
+requestedLocale:{value:bl,writable:true},
+second:{writable:true},
+timeZone:{writable:true},
+timeZoneName:{writable:true},
+tz:{value:bQ,writable:true},
+weekday:{writable:true},
+year:{writable:true}
+});
+var bS=%CreateDateTimeFormat(
+bl,{skeleton:bJ,timeZone:bQ},ah);
+if(ah.timeZone==="Etc/Unknown"){
+throw %make_range_error(187,bQ);
+}
+%MarkAsInitializedIntlObjectOfType(bS,'dateformat');
+bS[t]=ah;
+return bS;
+}
+function DateTimeFormatConstructor(){
+return IntlConstruct(this,g,CreateDateTimeFormat,
+new.target,arguments,true);
+}
+%SetCode(g,DateTimeFormatConstructor);
+%DefineMethodsInternal(g.prototype,class{resolvedOptions(){
+var bG=Unwrap(this,'dateformat',g,
+'resolvedOptions',true);
+var bT={
+'gregorian':'gregory',
+'ethiopic-amete-alem':'ethioaa'
+};
+var bU=fromLDMLString(bG[t][s]);
+var bV=bT[bG[t].calendar];
+if((bV===(void 0))){
+bV=bG[t].calendar;
+}
+var aE={
+locale:bG[t].locale,
+numberingSystem:bG[t].numberingSystem,
+calendar:bV,
+timeZone:bG[t].timeZone
+};
+addWECPropertyIfDefined(aE,'timeZoneName',bU.timeZoneName);
+addWECPropertyIfDefined(aE,'era',bU.era);
+addWECPropertyIfDefined(aE,'year',bU.year);
+addWECPropertyIfDefined(aE,'month',bU.month);
+addWECPropertyIfDefined(aE,'day',bU.day);
+addWECPropertyIfDefined(aE,'weekday',bU.weekday);
+addWECPropertyIfDefined(aE,'hour12',bU.hour12);
+addWECPropertyIfDefined(aE,'hour',bU.hour);
+addWECPropertyIfDefined(aE,'minute',bU.minute);
+addWECPropertyIfDefined(aE,'second',bU.second);
+return aE;
+}},-1);
+%DefineMethodsInternal(g,class{supportedLocalesOf(A){
+return supportedLocalesOf('dateformat',A,arguments[1]);
+}},-1);
+function formatDate(bH,bW){
+var bX;
+if((bW===(void 0))){
+bX=%DateCurrentTime();
+}else{
+bX=(%_ToNumber(bW));
+}
+if(!(%_IsSmi(%IS_VAR(bX))||((bX==bX)&&(bX!=1/0)&&(bX!=-1/0))))throw %make_range_error(155);
+return %InternalDateFormat(bH,new e(bX));
+}
+%DefineMethodsInternal(g.prototype,class{formatToParts(bW){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"Intl.DateTimeFormat.prototype.formatToParts");
+if(!(typeof(this)==='object')){
+throw %make_type_error(17,this);
+}
+if(!%IsInitializedIntlObjectOfType(this,'dateformat')){
+throw %make_type_error(49,
+'Intl.DateTimeFormat.prototype.formatToParts',
+this);
+}
+var bX;
+if((bW===(void 0))){
+bX=%DateCurrentTime();
+}else{
+bX=(%_ToNumber(bW));
+}
+if(!(%_IsSmi(%IS_VAR(bX))||((bX==bX)&&(bX!=1/0)&&(bX!=-1/0))))throw %make_range_error(155);
+return %InternalDateFormatToParts(this,new e(bX));
+}},-1);
+AddBoundMethod(g,'format',formatDate,1,'dateformat',
+true);
+function canonicalizeTimeZoneID(bY){
+if((bY===(void 0))){
+return bY;
+}
+bY=(%_ToString(bY));
+var bZ=%StringToUpperCaseIntl(bY);
+if(bZ==='UTC'||bZ==='GMT'||
+bZ==='ETC/UTC'||bZ==='ETC/GMT'){
+return'UTC';
+}
+var aD=%regexp_internal_match(GetTimezoneNameCheckRE(),bY);
+if((aD===null))throw %make_range_error(156,bY);
+var aE=toTitleCaseTimezoneLocation(aD[1])+'/'+
+toTitleCaseTimezoneLocation(aD[2]);
+if(!(aD[3]===(void 0))&&3<aD.length){
+var ca=%StringSplit(aD[3],'/',4294967295);
+for(var X=1;X<ca.length;X++){
+aE=aE+'/'+toTitleCaseTimezoneLocation(ca[X]);
+}
+}
+return aE;
+}
+function CreateBreakIterator(A,B){
+if((B===(void 0))){
+B={};
+}
+var ab=getGetOption(B,'breakiterator');
+var bg={};
+defineWEProperty(bg,'type',ab(
+'type','string',['character','word','sentence','line'],'word'));
+var Y=resolveLocale('breakiterator',A,B);
+var ah=%object_define_properties({},{
+requestedLocale:{value:Y.locale,writable:true},
+type:{value:bg.type,writable:true},
+locale:{writable:true}
+});
+var cb=%CreateBreakIterator(Y.locale,bg,ah);
+%MarkAsInitializedIntlObjectOfType(cb,'breakiterator');
+cb[t]=ah;
+return cb;
+}
+function v8BreakIteratorConstructor(){
+return IntlConstruct(this,k,CreateBreakIterator,
+new.target,arguments);
+}
+%SetCode(k,v8BreakIteratorConstructor);
+%DefineMethodsInternal(k.prototype,class{resolvedOptions(){
+if(!(new.target===(void 0))){
+throw %make_type_error(89);
+}
+var cc=Unwrap(this,'breakiterator',k,
+'resolvedOptions',false);
+return{
+locale:cc[t].locale,
+type:cc[t].type
+};
+}},-1);
+%DefineMethodsInternal(k,class{supportedLocalesOf(A){
+if(!(new.target===(void 0))){
+throw %make_type_error(89);
+}
+return supportedLocalesOf('breakiterator',A,arguments[1]);
+}},-1);
+function adoptText(cb,cd){
+%BreakIteratorAdoptText(cb,(%_ToString(cd)));
+}
+function first(cb){
+return %BreakIteratorFirst(cb);
+}
+function next(cb){
+return %BreakIteratorNext(cb);
+}
+function current(cb){
+return %BreakIteratorCurrent(cb);
+}
+function breakType(cb){
+return %BreakIteratorBreakType(cb);
+}
+AddBoundMethod(k,'adoptText',adoptText,1,
+'breakiterator');
+AddBoundMethod(k,'first',first,0,'breakiterator');
+AddBoundMethod(k,'next',next,0,'breakiterator');
+AddBoundMethod(k,'current',current,0,
+'breakiterator');
+AddBoundMethod(k,'breakType',breakType,0,
+'breakiterator');
+var ce={
+'collator':i,
+'numberformat':h,
+'dateformatall':g,
+'dateformatdate':g,
+'dateformattime':g
+};
+var cf={
+'collator':(void 0),
+'numberformat':(void 0),
+'dateformatall':(void 0),
+'dateformatdate':(void 0),
+'dateformattime':(void 0),
+};
+function clearDefaultObjects(){
+cf['dateformatall']=(void 0);
+cf['dateformatdate']=(void 0);
+cf['dateformattime']=(void 0);
+}
+var cg=0;
+function checkDateCacheCurrent(){
+var ch=%DateCacheVersion();
+if(ch==cg){
+return;
+}
+cg=ch;
+clearDefaultObjects();
+}
+function cachedOrNewService(J,A,B,bO){
+var ci=((bO===(void 0)))?B:bO;
+if((A===(void 0))&&(B===(void 0))){
+checkDateCacheCurrent();
+if((cf[J]===(void 0))){
+cf[J]=new ce[J](A,ci);
+}
+return cf[J];
+}
+return new ce[J](A,ci);
+}
+function LocaleConvertCase(cj,A,ck){
+var bd;
+if((A===(void 0))){
+bd=GetDefaultICULocaleJS();
+}else if((typeof(A)==='string')){
+bd=canonicalizeLanguageTag(A);
+}else{
+var A=initializeLocaleList(A);
+bd=A.length>0?A[0]:GetDefaultICULocaleJS();
+}
+var Z=%StringIndexOf(bd,'-',0);
+if(Z!==-1){
+bd=%_Call(v,bd,0,Z);
+}
+return %StringLocaleConvertCase(cj,ck,bd);
+}
+%DefineMethodsInternal(n.prototype,class{localeCompare(that){
+if((this==null)){
+throw %make_type_error(58);
+}
+var A=arguments[1];
+var B=arguments[2];
+var bm=cachedOrNewService('collator',A,B);
+return compare(bm,this,that);
+}},-1);
+var cl={};
+%DefineMethodsInternal(n.prototype,class{
+toLocaleLowerCase(A){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.toLocaleLowerCase");
+return LocaleConvertCase((%_ToString(this)),A,false);
+}
+toLocaleUpperCase(A){
+if((%IS_VAR(this)===null)||(this===(void 0)))throw %make_type_error(18,"String.prototype.toLocaleUpperCase");
+return LocaleConvertCase((%_ToString(this)),A,true);
+}
+},0);
+%DefineMethodsInternal(l.prototype,class{toLocaleString(){
+if(!(this instanceof l)&&typeof(this)!=='number'){
+throw %make_type_error(59,"Number");
+}
+var A=arguments[0];
+var B=arguments[1];
+var bF=cachedOrNewService('numberformat',A,B);
+return formatNumber(bF,this);
+}},-1);
+function toLocaleDateTime(cm,A,B,bN,bO,J){
+if(!(cm instanceof e)){
+throw %make_type_error(59,"Date");
+}
+var bW=(%_ToNumber(cm));
+if((%IS_VAR(bW)!==bW))return'Invalid Date';
+var bg=toDateTimeOptions(B,bN,bO);
+var bS=
+cachedOrNewService(J,A,B,bg);
+return formatDate(bS,cm);
+}
+%DefineMethodsInternal(e.prototype,class{toLocaleString(){
+var A=arguments[0];
+var B=arguments[1];
+return toLocaleDateTime(
+this,A,B,'any','all','dateformatall');
+}},-1);
+%DefineMethodsInternal(e.prototype,class{toLocaleDateString(){
+var A=arguments[0];
+var B=arguments[1];
+return toLocaleDateTime(
+this,A,B,'date','date','dateformatdate');
+}},-1);
+%DefineMethodsInternal(e.prototype,class{toLocaleTimeString(){
+var A=arguments[0];
+var B=arguments[1];
+return toLocaleDateTime(
+this,A,B,'time','time','dateformattime');
+}},-1);
+})
+
+ (test-extraÉ,
+(function (global, binding, v8) {
+  'use strict';
+  binding.testExtraShouldReturnFive = function() {
+    return 5;
+  };
+  binding.testExtraShouldCallToRuntime = function() {
+    return binding.runtime(3);
+  };
+  binding.testFunctionToString = function() {
+    function foo() { return 1; }
+    return foo.toString();
+  };
+  binding.testStackTrace = function(f) {
+    return f();
+  }
+  const Object = global.Object;
+  const hasOwn = v8.uncurryThis(Object.prototype.hasOwnProperty);
+  const Function = global.Function;
+  const call = v8.uncurryThis(Function.prototype.call);
+  const apply = v8.uncurryThis(Function.prototype.apply);
+  const Promise = global.Promise;
+  const Promise_resolve = v8.simpleBind(Promise.resolve, Promise);
+  const arrayToTest = new v8.InternalPackedArray();
+  arrayToTest.push(1);
+  arrayToTest.push(2);
+  arrayToTest.pop();
+  arrayToTest.unshift("a", "b", "c");
+  arrayToTest.shift();
+  arrayToTest.splice(0, 1);
+  const slicedArray = arrayToTest.slice();
+  const arraysOK = arrayToTest.length === 2 && arrayToTest[0] === "c" &&
+      arrayToTest[1] === 1 && slicedArray.length === 2 &&
+      slicedArray[0] === "c" && slicedArray[1] === 1;
+  binding.testExtraCanUseUtils = function() {
+    const fulfilledPromise = v8.createPromise();
+    v8.resolvePromise(
+      fulfilledPromise,
+      hasOwn({ test: 'test' }, 'test') ? 1 : -1,
+      undefined
+    );
+    const fulfilledPromise2 = Promise_resolve(call(function (arg1, arg2) {
+      return (this.prop === arg1 && arg1 === 'value' && arg2) ? 2 : -1;
+    }, { prop: 'value' }, 'value', arraysOK));
+    const rejectedPromise = v8.createPromise();
+    v8.rejectPromise(rejectedPromise, apply(function (arg1, arg2) {
+      return (arg1 === arg2 && arg2 === 'x') ? 3 : -1;
+    }, null, new v8.InternalPackedArray('x', 'x')));
+    const rejectedButHandledPromise = v8.createPromise();
+    v8.rejectPromise(rejectedButHandledPromise, 4);
+    v8.markPromiseAsHandled(rejectedButHandledPromise);
+    function promiseStateToString(promise) {
+      switch (v8.promiseState(promise)) {
+        case v8.kPROMISE_PENDING:
+          return "pending";
+        case v8.kPROMISE_FULFILLED:
+          return "fulfilled";
+        case v8.kPROMISE_REJECTED:
+          return "rejected";
+        default:
+          throw new Error("Unexpected value for promiseState");
+      }
+    }
+    let promiseStates = promiseStateToString(new Promise(() => {})) + ' ' +
+                        promiseStateToString(fulfilledPromise) + ' ' +
+                        promiseStateToString(rejectedPromise);
+    return {
+      privateSymbol: v8.createPrivateSymbol('sym'),
+      fulfilledPromise,
+      fulfilledPromise2,
+      rejectedPromise,
+      rejectedButHandledPromise,
+      promiseStates,
+      promiseIsPromise: v8.isPromise(fulfilledPromise),
+      thenableIsPromise: v8.isPromise({ then() { } })
+    };
+  };
+})
+ \test-experimental-extra­
+(function (global, binding) {
+  'use strict';
+  binding.testExperimentalExtraShouldReturnTen = function () {
+    return 10;
+  };
+  binding.testExperimentalExtraShouldCallToRuntime = function() {
+    return binding.runtime(3);
+  };
+})
